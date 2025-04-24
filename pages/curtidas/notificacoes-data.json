@@ -1,0 +1,27 @@
+{
+  "notificacoes": [
+    {
+      "id": 1,
+      "nome": "Eduarda",
+      "distancia": "4 km",
+      "mensagem": "Te enviou uma curtida",
+      "tempo": "Agora mesmo",
+      "imagem": "/images/2.jpg"
+    },
+    {
+      "id": 2,
+      "nome": "Camila",
+      "distancia": "2 km",
+      "mensagem": "Te enviou uma mensagem",
+      "tempo": "Agora mesmo",
+      "imagem": "/images/3.jpg"
+    }
+  ],
+  "respostasAutomaticas": [
+    "Isso é interessante!",
+    "Me conta mais sobre isso...",
+    "Adorei sua mensagem!",
+    "Que legal! 😊",
+    "Entendi. E o que mais?"
+  ]
+} 

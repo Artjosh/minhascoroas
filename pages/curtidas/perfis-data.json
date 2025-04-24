@@ -1,0 +1,108 @@
+{
+  "perfis": [
+    {
+      "id": 1,
+      "nome": "Carolina, 32",
+      "distancia": "5km",
+      "descricao": "Adoro compartilhar bons momentos com pessoas interessantes. Busco alguém que goste de aventura e seja divertido!",
+      "imagem": "/images/1.jpg",
+      "interesses": ["Cinema", "Viagens", "Gastronomia"]
+    },
+    {
+      "id": 2,
+      "nome": "Patrícia, 35",
+      "distancia": "7km",
+      "descricao": "Bem resolvida, independente e com desejo de conhecer pessoas novas. Gosto de viajar, ler e ir ao cinema.",
+      "imagem": "/images/2.jpg",
+      "interesses": ["Leitura", "Vinhos", "Passeios"]
+    },
+    {
+      "id": 3,
+      "nome": "Amanda, 37",
+      "distancia": "3km",
+      "descricao": "Empresária, gosto de música, academia e bons drinks. Procuro companhia para momentos agradáveis.",
+      "imagem": "/images/3.jpg",
+      "interesses": ["Música", "Fitness", "Festas"]
+    },
+    {
+      "id": 4,
+      "nome": "Juliana, 40",
+      "distancia": "8km",
+      "descricao": "Médica, adoro praia, viagens e boas conversas. Buscando alguém para dividir experiências.",
+      "imagem": "/images/4.jpg",
+      "interesses": ["Praia", "Viagens", "Arte"]
+    },
+    {
+      "id": 5,
+      "nome": "Fernanda, 36",
+      "distancia": "7km",
+      "descricao": "Advogada, adoro teatro, vinhos e uma boa conversa. Procuro alguém para compartilhar momentos especiais.",
+      "imagem": "/images/5.jpg",
+      "interesses": ["Teatro", "Vinhos", "Gastronomia"]
+    },
+    {
+      "id": 6,
+      "nome": "Beatriz, 33",
+      "distancia": "11km",
+      "descricao": "Empreendedora, gosto de esportes, natureza e viagens. Busco alguém com energia para viver!",
+      "imagem": "/images/6.png",
+      "interesses": ["Esportes", "Natureza", "Viagens"]
+    },
+    {
+      "id": 7,
+      "nome": "Luciana, 39",
+      "distancia": "8km",
+      "descricao": "Professora, aprecio arte, cinema e boa literatura. Procuro companhia para momentos culturais.",
+      "imagem": "/images/7.jpg",
+      "interesses": ["Arte", "Cinema", "Literatura"]
+    },
+    {
+      "id": 8,
+      "nome": "Camila, 34",
+      "distancia": "4km",
+      "descricao": "Arquiteta, amo design, fotografia e gastronomia. Busco alguém para compartilhar experiências criativas.",
+      "imagem": "/images/8.jpg",
+      "interesses": ["Design", "Fotografia", "Gastronomia"]
+    },
+    {
+      "id": 9,
+      "nome": "Eduarda, 30",
+      "distancia": "4km",
+      "descricao": "Jornalista, adoro música, dança e viagens. Procuro alguém divertido para momentos especiais.",
+      "imagem": "/images/9.jpg",
+      "interesses": ["Música", "Dança", "Viagens"]
+    },
+    {
+      "id": 10,
+      "nome": "Gabriela, 38",
+      "distancia": "13km",
+      "descricao": "Psicóloga, gosto de yoga, meditação e natureza. Busco conexões genuínas e profundas.",
+      "imagem": "/images/10.png",
+      "interesses": ["Yoga", "Meditação", "Natureza"]
+    },
+    {
+      "id": 11,
+      "nome": "Renata, 36",
+      "distancia": "9km",
+      "descricao": "Empresária, adoro festas, eventos sociais e networking. Procuro alguém animado para me acompanhar.",
+      "imagem": "/images/011.jpg",
+      "interesses": ["Festas", "Eventos", "Networking"]
+    },
+    {
+      "id": 12,
+      "nome": "Mariana, 31",
+      "distancia": "6km",
+      "descricao": "Nutricionista, amo culinária saudável, esportes e vida ao ar livre. Busco parceria para aventuras.",
+      "imagem": "/images/12.jpg",
+      "interesses": ["Culinária", "Esportes", "Natureza"]
+    },
+    {
+      "id": 13,
+      "nome": "Vanessa, 33",
+      "distancia": "11km",
+      "descricao": "Designer, apaixonada por arte, moda e tecnologia. Procuro alguém criativo e interessante.",
+      "imagem": "/images/13.jpg",
+      "interesses": ["Arte", "Moda", "Tecnologia"]
+    }
+  ]
+} 

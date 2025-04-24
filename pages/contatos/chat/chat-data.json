@@ -1,0 +1,63 @@
+{
+  "usuarios": {
+    "1": {
+      "id": 1,
+      "nome": "Carolina",
+      "foto": "/images/1.jpg",
+      "online": true
+    },
+    "2": {
+      "id": 2,
+      "nome": "Patrícia",
+      "foto": "/images/2.jpg",
+      "online": false
+    },
+    "3": {
+      "id": 3,
+      "nome": "Amanda",
+      "foto": "/images/3.jpg",
+      "online": true
+    },
+    "4": {
+      "id": 4,
+      "nome": "Juliana",
+      "foto": "/images/4.jpg",
+      "online": false
+    }
+  },
+  "mensagensPorConversa": {
+    "1": [
+      { "id": 1, "texto": "Oi, tudo bem? Gostei do seu perfil!", "remetente": "outro", "horario": "14:30" },
+      { "id": 2, "texto": "Oi! Tudo ótimo, também gostei do seu perfil. O que você gosta de fazer?", "remetente": "eu", "horario": "14:32" },
+      { "id": 3, "texto": "Adoro cinema, restaurantes e viajar. E você?", "remetente": "outro", "horario": "14:35" },
+      { "id": 4, "texto": "Também gosto dessas coisas! Que tipo de filmes você curte?", "remetente": "eu", "horario": "14:40" },
+      { "id": 5, "texto": "Gosto de filmes de suspense, romance e comédia. Poderíamos ir ao cinema qualquer dia desses.", "remetente": "outro", "horario": "14:45" }
+    ],
+    "2": [
+      { "id": 1, "texto": "Quando vamos nos encontrar?", "remetente": "outro", "horario": "12:15" },
+      { "id": 2, "texto": "Podemos marcar para essa semana, que tal?", "remetente": "eu", "horario": "12:20" },
+      { "id": 3, "texto": "Perfeito! Quinta-feira à noite está bom para você?", "remetente": "outro", "horario": "12:25" },
+      { "id": 4, "texto": "Quinta é perfeito! Onde podemos nos encontrar?", "remetente": "eu", "horario": "12:28" }
+    ],
+    "3": [
+      { "id": 1, "texto": "Adorei conversar com você ontem.", "remetente": "outro", "horario": "Ontem" },
+      { "id": 2, "texto": "Eu também! Foi um papo muito agradável.", "remetente": "eu", "horario": "Ontem" },
+      { "id": 3, "texto": "Queria te conhecer melhor. Qual sua cor favorita?", "remetente": "outro", "horario": "Ontem" },
+      { "id": 4, "texto": "Azul! E a sua?", "remetente": "eu", "horario": "Ontem" },
+      { "id": 5, "texto": "Roxo. E comida favorita?", "remetente": "outro", "horario": "Hoje" }
+    ],
+    "4": [
+      { "id": 1, "texto": "Me manda o local do nosso encontro.", "remetente": "outro", "horario": "Seg" },
+      { "id": 2, "texto": "Vamos ao restaurante Delícias da Terra, fica na Av. Principal, 123", "remetente": "eu", "horario": "Seg" },
+      { "id": 3, "texto": "Perfeito! Já sei onde é. Nos vemos lá às 20h?", "remetente": "outro", "horario": "Seg" },
+      { "id": 4, "texto": "Combinado! Estou ansioso para te conhecer pessoalmente.", "remetente": "eu", "horario": "Seg" }
+    ]
+  },
+  "respostasAutomaticas": [
+    "Isso é interessante!",
+    "Me conta mais sobre isso...",
+    "Adorei sua mensagem!",
+    "Que legal! 😊",
+    "Entendi. E o que mais?"
+  ]
+} 

@@ -1,0 +1,40 @@
+{
+  "pessoasQueCurtiraraUsuario": [
+    {
+      "id": 1,
+      "nome": "Carolina, 32",
+      "distancia": "5km",
+      "imagem": "/images/1.jpg"
+    },
+    {
+      "id": 2,
+      "nome": "Patrícia, 35",
+      "distancia": "7km",
+      "imagem": "/images/2.jpg"
+    },
+    {
+      "id": 3,
+      "nome": "Amanda, 37",
+      "distancia": "3km",
+      "imagem": "/images/3.jpg"
+    },
+    {
+      "id": 4,
+      "nome": "Juliana, 40",
+      "distancia": "8km",
+      "imagem": "/images/4.jpg"
+    },
+    {
+      "id": 5,
+      "nome": "Fernanda, 36",
+      "distancia": "7km",
+      "imagem": "/images/5.jpg"
+    },
+    {
+      "id": 6,
+      "nome": "Beatriz, 33",
+      "distancia": "11km",
+      "imagem": "/images/6.png"
+    }
+  ]
+} 
