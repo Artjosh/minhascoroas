@@ -2,10 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   allowedDevOrigins: [
-    // Adicione endereços IP específicos que precisam de acesso
-    'http://5.78.42.115',
-    'http://localhost'
+    'http://localhost',
+    'http://10.88.0.3'
   ]
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

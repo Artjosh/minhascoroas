@@ -3,12 +3,9 @@ import Head from 'next/head';
 import { useUtmParams } from '../../components/UtmManager';
 import BottomNavigation from '../../components/BottomNavigation';
 import { isUserLoggedIn, getUserData, getAuthHeaders } from '../../lib/auth';
-import dadosPerfis from './perfis-data.json';
-import dadosNotificacoes from './notificacoes-data.json';
 
-// Importando dados dos arquivos JSON
-const perfis = dadosPerfis.perfis;
-const notificacoes = dadosNotificacoes.notificacoes;
+import { perfis, notificacoes } from '../../data/mock';
+
 
 export default function Curtidas() {
   const { redirectWithUtm } = useUtmParams();
@@ -53,28 +50,32 @@ export default function Curtidas() {
   
   // Mostrar notificações
   useEffect(() => {
-    if (!carregando && perfisDisponiveis.length > 0) {
+    // Garantir que temos notificações e perfis antes de iniciar os timers
+    if (!carregando && perfisDisponiveis.length > 0 && notificacoes.length > 0) {
       // Mostrar primeira notificação após 5 segundos
       const notification1Timer = setTimeout(() => {
-        setNotificacaoAtual(0);
+        setNotificacaoAtual(0); // Usa a primeira notificação do array importado
         setShowNotification(true);
         
         // Esconder a notificação após 5 segundos
         setTimeout(() => {
           setShowNotification(false);
         }, 5000);
-      }, 5000);
+      }, 5000);    
       
-      // Mostrar segunda notificação após 15 segundos
-      const notification2Timer = setTimeout(() => {
-        setNotificacaoAtual(1);
-        setShowNotification(true);
-        
-        // Esconder a notificação após 5 segundos
-        setTimeout(() => {
-          setShowNotification(false);
-        }, 5000);
-      }, 15000);
+       // Mostrar segunda notificação após 15 segundos (se existir)
+      let notification2Timer = null;
+      if (notificacoes.length > 1) {
+        notification2Timer = setTimeout(() => {
+          setNotificacaoAtual(1); // Usa a segunda notificação do array importado
+          setShowNotification(true);
+
+          // Esconder a notificação após 5 segundos
+          setTimeout(() => {
+            setShowNotification(false);
+          }, 5000);
+        }, 15000);
+      }
       
       return () => {
         clearTimeout(notification1Timer);
@@ -97,12 +98,12 @@ export default function Curtidas() {
       const data = await response.json();
       const matchIds = data.matches || [];
       
-      // Filtrar perfis que já tiveram match
+       // Filtrar perfis que já tiveram match
       const perfisRestantes = perfis.filter(perfil => !matchIds.includes(perfil.id));
       
       setPerfisDisponiveis(perfisRestantes);
       setMatches(matchIds);
-      setCarregando(false);
+      setCarregando(false);      
     } catch (error) {
       console.error('Erro ao buscar matches:', error);
       setPerfisDisponiveis(perfis);
