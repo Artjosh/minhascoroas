@@ -25,3 +25,4 @@ CREATE POLICY "Exclusão pública das fotos"
 ON storage.objects FOR DELETE
 TO public
 USING (bucket_id = 'perfil-fotos');
+ 

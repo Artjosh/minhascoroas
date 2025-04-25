@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useUtmParams } from '../components/UtmManager';
-import BottomNavigation from '../components/BottomNavigation';
+import { isUserLoggedIn } from '../lib/auth';
 
 export default function Home() {
   const router = useRouter();
@@ -49,8 +49,7 @@ export default function Home() {
         position: 'relative',
         zIndex: 0,
         color: 'white',
-        minHeight: '100vh',
-        paddingBottom: '60px' // Espaço para o BottomNavigation
+        minHeight: '100vh'
       }}>
         <div style={{ textAlign: 'center' }}>
           <img src="/images/logoCoroa.png" alt="Logo Minha Coroa" width="150px" />
@@ -129,9 +128,6 @@ export default function Home() {
           )}
         </div>
       </main>
-      
-      {/* BottomNavigation só aparece para usuários logados */}
-      {userLogado && <BottomNavigation />}
     </div>
   );
 } 

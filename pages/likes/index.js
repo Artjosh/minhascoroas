@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useUtmParams } from '../../components/UtmManager';
 import BottomNavigation from '../../components/BottomNavigation';
-import dadosCurtidas from './likes-data.json';
+import mockData from '../../data/mock';
 
 export default function Likes() {
   const { redirectWithUtm } = useUtmParams();
@@ -10,8 +10,8 @@ export default function Likes() {
   const [user, setUser] = useState(null);
   const [showPremiumPopup, setShowPremiumPopup] = useState(false);
   
-  // Carregando dados do arquivo JSON
-  const curtidas = dadosCurtidas.pessoasQueCurtiraraUsuario;
+  // Usando dados centralizados do mock
+  const curtidas = mockData.pessoasQueCurtiraraUsuario;
   
   useEffect(() => {
     // Verificar se o usuário está logado
