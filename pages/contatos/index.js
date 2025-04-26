@@ -24,6 +24,7 @@ import {
 } from "../../lib/chat-utils"
 // Use the chat-utils functions instead of conversas
 // Remove this import and use the functions from chat-utils
+import { useRouter } from "next/router"
 
 // Tempo entre verificações automáticas em milissegundos (aumentado para reduzir requests)
 const POLLING_INTERVAL = 30000 // 30 segundos
@@ -91,6 +92,7 @@ export default function Contatos() {
   const [carregando, setCarregando] = useState(true)
   const [ultimaVerificacao, setUltimaVerificacao] = useState(0)
   const [semMatches, setSemMatches] = useState(false)
+  const router = useRouter()
 
   // Função para verificar se há um novo match no localStorage
   const verificarNovoMatch = useCallback(async () => {
@@ -581,8 +583,8 @@ export default function Contatos() {
 
   // Função para selecionar um contato
   const selecionarContato = (id) => {
-    setContatoAtivo(contatosLista.find((c) => c.id === id))
-    setShowMobile("chat")
+    // Instead of changing the view state, redirect to the chat page
+    router.push(`/contatos/chat?id=${id}`)
   }
 
   // Voltar para a lista em modo mobile
@@ -801,141 +803,8 @@ export default function Contatos() {
   }
 
   // Função para renderizar as mensagens do chat ativo
-  const renderMensagens = () => {
-    if (!contatoAtivo) return null
-
-    return (
-      <div
-        className="mensagens-container"
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          padding: "15px",
-          paddingBottom: "80px", // Espaço para o input não cobrir as mensagens
-          overflow: "auto",
-          flex: 1,
-          backgroundImage: `url('/images/fundoConversa.png')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        {contatoAtivo.mensagens.map((msg) => (
-          <div
-            key={msg.id}
-            className={`mensagem ${msg.enviada ? "enviada" : "recebida"}`}
-            style={{
-              alignSelf: msg.enviada ? "flex-end" : "flex-start",
-              backgroundColor: msg.enviada ? "#DCF8C6" : "white",
-              color: msg.enviada ? "#333" : "#333",
-              padding: "10px 15px",
-              borderRadius: msg.enviada ? "20px 20px 4px 20px" : "20px 20px 20px 4px",
-              margin: "5px 0",
-              maxWidth: "80%",
-              position: "relative",
-              boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            <div style={{ fontSize: "14px" }}>{msg.texto}</div>
-            <div
-              style={{
-                fontSize: "10px",
-                opacity: 0.7,
-                textAlign: "right",
-                marginTop: "5px",
-              }}
-            >
-              {msg.hora}
-            </div>
-          </div>
-        ))}
-      </div>
-    )
-  }
 
   // Função para renderizar o formulário de envio de mensagem
-  const renderFormulario = () => {
-    if (!contatoAtivo) return null
-
-    return (
-      <div
-        id="input-container2"
-        className="input-container2"
-        style={{
-          fontFamily: "Arial, sans-serif",
-          color: "white",
-          position: "relative",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          gap: "10px",
-          boxShadow: "0 -2px 10px rgba(0, 0, 0, 0.2)",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          margin: "15px",
-          padding: "10px",
-          borderRadius: "42px",
-          zIndex: 99,
-          backgroundColor: "rgb(34, 34, 34)",
-        }}
-      >
-        <form
-          onSubmit={enviarMensagem}
-          style={{
-            display: "flex",
-            width: "100%",
-            alignItems: "center",
-          }}
-        >
-          <input
-            type="text"
-            id="user-input2"
-            className="user-input2"
-            value={mensagem}
-            onChange={(e) => setMensagem(e.target.value)}
-            placeholder="Digite sua mensagem..."
-            style={{
-              background: "none",
-              color: "white",
-              fontSize: "16px",
-              boxShadow: "none",
-              border: "none",
-              outline: "none",
-              flex: 1,
-              padding: "10px 15px",
-            }}
-          />
-          <button
-            type="submit"
-            disabled={mensagem.trim() === ""}
-            style={{
-              background: mensagem.trim() === "" ? "#555" : "linear-gradient(to bottom, #801AB8, #C922FC, #801AB8)",
-              padding: "10px",
-              borderRadius: "100%",
-              border: "none",
-              marginLeft: "-20px",
-              cursor: mensagem.trim() === "" ? "default" : "pointer",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              opacity: mensagem.trim() === "" ? 0.5 : 1,
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22 2L11 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path
-                d="M22 2L15 22L11 13L2 9L22 2Z"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </form>
-      </div>
-    )
-  }
 
   // Interface principal
   return (
@@ -1038,56 +907,15 @@ export default function Contatos() {
           backgroundPosition: "center",
         }}
       >
-        {/* Lista de contatos (visível apenas em desktop ou mobile lista) */}
+        {/* Lista de contatos */}
         <div
           className="contatos-lista"
           style={{
             width: "100%",
             overflowY: "auto",
-            display: showMobile === "lista" ? "block" : "none",
           }}
         >
           {carregando ? <LoadingSpinner /> : renderContatos()}
-        </div>
-
-        {/* Chat (visível apenas em desktop ou mobile chat) */}
-        <div
-          className="chat-area"
-          style={{
-            flex: 1,
-            display: showMobile === "chat" ? "flex" : "none",
-            flexDirection: "column",
-            backgroundImage: `url('/images/fundoConversa.png')`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          {contatoAtivo ? (
-            <>
-              {renderMensagens()}
-              {renderFormulario()}
-            </>
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-                padding: "20px",
-                textAlign: "center",
-                color: "#666",
-              }}
-            >
-              <img
-                src="/images/select-chat.svg"
-                alt="Selecione um chat"
-                style={{ width: "80px", marginBottom: "20px", opacity: 0.5 }}
-              />
-              <p>Selecione um chat para começar a conversar</p>
-            </div>
-          )}
         </div>
       </main>
       {showMobile === "lista" && <BottomNavigation />}

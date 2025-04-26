@@ -6,73 +6,15 @@ import { useRouter } from "next/router"
 import { useUtmParams } from "../../../components/UtmManager"
 import { isUserLoggedIn, getUserData } from "../../../lib/auth"
 import LoadingSpinner from "../../../components/LoadingSpinner"
-import { getConversa, salvarConversa, isOnline, inicializarConversa } from "../../../lib/chat-utils"
-import { mulheres as perfis } from "../../data/mock/index"
+import {
+  getConversa,
+  salvarConversa,
+  isOnline,
+  inicializarConversa,
+  enviarMensagem as enviarMensagemChat,
+} from "../../../lib/chat-utils"
+import { mulheres } from "../../../data/mock/index"
 import AudioMessage from "../../../components/AudioMessage"
-
-// Function to get the next stage of conversation
-const obterProximaEtapa = (perfilId, etapaAtual) => {
-  try {
-    const perfil = perfis.find((p) => p.id.toString() === perfilId.toString())
-    if (!perfil) return null
-
-    // For the first response (etapa 1 -> 2), use audio if available
-    if (etapaAtual === 1) {
-      const audios = perfil.audios || []
-      if (audios.length > 0) {
-        const greetingAudio =
-          audios.find((a) => a.tipo === "saudacao") || audios[Math.floor(Math.random() * audios.length)]
-
-        return {
-          mensagens: [
-            {
-              id: Date.now(),
-              tipo: "audio",
-              texto: greetingAudio.texto || "Olá! Que bom falar com você!",
-              duracao: "0:30",
-              enviada: false,
-              hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            },
-          ],
-        }
-      }
-    }
-
-    // For other stages, use text responses
-    const respostas = perfil.respostasAutomaticas || []
-    if (respostas.length > 0) {
-      const indice = Math.floor(Math.random() * respostas.length)
-
-      return {
-        mensagens: [
-          {
-            id: Date.now(),
-            tipo: "texto",
-            texto: respostas[indice],
-            enviada: false,
-            hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          },
-        ],
-      }
-    }
-
-    // Fallback
-    return {
-      mensagens: [
-        {
-          id: Date.now(),
-          tipo: "texto",
-          texto: "Estou gostando muito de conversar com você!",
-          enviada: false,
-          hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      ],
-    }
-  } catch (error) {
-    console.error("Error getting next stage:", error)
-    return null
-  }
-}
 
 export default function Chat() {
   const router = useRouter()
@@ -138,17 +80,17 @@ export default function Chat() {
 
     console.log("[useEffect] Iniciando carregamento do chat, ID:", id)
 
+    if (!id) return
+
     const userInfo = getUserData()
     setUserId(userInfo.id)
     console.log("[useEffect] Dados do usuário:", userInfo)
-
-    if (!id) return
 
     // Buscar o perfil do match pelo ID (garantir que seja tratado como string)
     const idString = String(id)
     console.log("[useEffect] ID convertido para string:", idString)
 
-    const matchPerfil = perfis.find((p) => String(p.id) === idString)
+    const matchPerfil = mulheres.find((p) => String(p.id) === idString)
     console.log("[useEffect] Perfil encontrado:", matchPerfil)
 
     if (matchPerfil) {
@@ -202,76 +144,12 @@ export default function Chat() {
         estadoInicial.perfilId = String(matchPerfil.id)
         console.log("PerfilId armazenado:", estadoInicial.perfilId)
 
-        // Adicionar primeira mensagem de saudação
-        const primeiraEtapa = obterProximaEtapa(matchPerfil.id, 1)
-        console.log("Primeira etapa obtida:", primeiraEtapa)
+        setMensagens(estadoInicial.mensagens || [])
+        setEtapaAtual(estadoInicial.etapaAtual || 0)
 
-        if (primeiraEtapa && primeiraEtapa.mensagens && primeiraEtapa.mensagens.length > 0) {
-          // Filtrar mensagens sem texto
-          const mensagensFiltradas = primeiraEtapa.mensagens.filter((msg) => msg && (msg.texto || msg.tipo === "audio"))
-
-          if (mensagensFiltradas.length > 0) {
-            console.log("Mensagens filtradas para primeira etapa:", mensagensFiltradas)
-            estadoInicial.mensagens = mensagensFiltradas
-            estadoInicial.etapaAtual = 1
-            setEtapaAtual(1)
-            setMensagens(mensagensFiltradas)
-
-            // Adicionar informações de perfil
-            estadoInicial.nome = nomePerfil
-            estadoInicial.foto = matchPerfil.foto || matchPerfil.imagem
-
-            // Salvar no localStorage
-            salvarConversa(userInfo.id, matchPerfil.id, estadoInicial)
-            console.log("Estado inicial salvo no localStorage:", estadoInicial)
-          } else {
-            // Se todas as mensagens foram filtradas (sem texto), criar uma mensagem padrão
-            console.log("Não há mensagens válidas, criando mensagem padrão")
-            const mensagemPadrao = {
-              id: Date.now(),
-              tipo: "texto",
-              texto: "Olá! Que bom te conhecer. Como está seu dia?",
-              enviada: false,
-              hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            }
-
-            estadoInicial.mensagens = [mensagemPadrao]
-            estadoInicial.etapaAtual = 1
-            setEtapaAtual(1)
-            setMensagens([mensagemPadrao])
-
-            // Adicionar informações de perfil
-            estadoInicial.nome = nomePerfil
-            estadoInicial.foto = matchPerfil.foto || matchPerfil.imagem
-
-            // Salvar no localStorage
-            salvarConversa(userInfo.id, matchPerfil.id, estadoInicial)
-            console.log("Estado inicial com mensagem padrão salvo:", estadoInicial)
-          }
-        } else {
-          // Se não houver primeira etapa definida, criar uma mensagem padrão
-          console.log("Não há primeira etapa definida, criando mensagem padrão")
-          const mensagemPadrao = {
-            id: Date.now(),
-            tipo: "texto",
-            texto: "Oi! Adorei seu perfil. Vamos conversar?",
-            enviada: false,
-            hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          }
-
-          estadoInicial.mensagens = [mensagemPadrao]
-          estadoInicial.etapaAtual = 1
-          setEtapaAtual(1)
-          setMensagens([mensagemPadrao])
-
-          // Adicionar informações de perfil
-          estadoInicial.nome = nomePerfil
-          estadoInicial.foto = matchPerfil.foto || matchPerfil.imagem
-
-          // Salvar no localStorage
-          salvarConversa(userInfo.id, matchPerfil.id, estadoInicial)
-          console.log("Estado inicial com mensagem padrão salvo:", estadoInicial)
-        }
+        // Salvar no localStorage
+        salvarConversa(userInfo.id, matchPerfil.id, estadoInicial)
+        console.log("Estado inicial salvo no localStorage:", estadoInicial)
       }
 
       setLoading(false)
@@ -344,333 +222,34 @@ export default function Chat() {
   }, [mensagens])
 
   // Função para enviar uma nova mensagem
-  const enviarMensagem = async (texto) => {
-    console.log("[enviarMensagem] Iniciando envio de mensagem. Texto:", texto)
-    console.log(
-      "[enviarMensagem] Estado atual - UserId:",
-      userId,
-      "PerfilMatch:",
-      perfilMatch,
-      "Etapa atual:",
-      etapaAtual,
-    )
+  const handleEnviarMensagem = (e) => {
+    e.preventDefault()
 
-    if (!texto || texto.trim() === "" || !userId || !perfilMatch) {
-      console.log("[enviarMensagem] Cancelando envio - dados inválidos")
-      return
-    }
+    if (!novaMensagem.trim() || !userId || !id) return
 
-    setNovaMensagem("")
+    // Usar a função enviarMensagem do chat-utils.js
+    const mensagemEnviada = enviarMensagemChat(userId, id, novaMensagem.trim())
 
-    console.log("[enviarMensagem] Criando objeto de mensagem")
-    const novaMensagem = {
-      id: Date.now(),
-      tipo: "texto",
-      texto,
-      enviada: true,
-      hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    }
-    console.log("[enviarMensagem] Mensagem criada:", novaMensagem)
+    if (mensagemEnviada) {
+      // Limpar o campo de entrada
+      setNovaMensagem("")
 
-    const novasMensagens = [...mensagens, novaMensagem]
-    console.log("[enviarMensagem] Lista de mensagens atualizada:", novasMensagens)
+      // Buscar a conversa atualizada para obter todas as mensagens
+      const conversaAtualizada = getConversa(userId, id)
+      if (conversaAtualizada && conversaAtualizada.mensagens) {
+        setMensagens(sanitizarMensagens(conversaAtualizada.mensagens))
+        setEtapaAtual(conversaAtualizada.etapaAtual || 0)
+      }
 
-    // Sanitizar mensagens para garantir consistência
-    const mensagensSanitizadas = sanitizarMensagens(novasMensagens)
-    console.log("[enviarMensagem] Mensagens sanitizadas:", mensagensSanitizadas)
-
-    setMensagens(mensagensSanitizadas)
-
-    // Garantir que o ID do perfil é armazenado corretamente
-    const perfilIdString = perfilMatch && perfilMatch.id ? String(perfilMatch.id) : id
-    console.log("[enviarMensagem] ID do perfil convertido para string:", perfilIdString)
-
-    // Garantir que etapaAtual seja pelo menos 1 (nunca 0)
-    const etapaAtualCorrigida = etapaAtual < 1 ? 1 : etapaAtual
-
-    // Salvar conversa atualizada com informações completas
-    const conversaAtualizada = {
-      mensagens: mensagensSanitizadas,
-      etapaAtual: etapaAtualCorrigida, // Usar etapa corrigida
-      perfilId: perfilIdString, // Garantir que é string
-      ultimaAtualizacao: Date.now(),
-      nome: perfilMatch.nome.split(",")[0], // Garantir que o nome está salvo
-      foto: perfilMatch.foto, // Garantir que a foto está salva
-    }
-
-    console.log("[enviarMensagem] Salvando conversa atualizada:", conversaAtualizada)
-    salvarConversa(userId, perfilIdString, conversaAtualizada)
-
-    console.log(
-      "[enviarMensagem] Buscando próxima etapa do fluxo. ID:",
-      perfilIdString,
-      "Etapa atual:",
-      etapaAtualCorrigida,
-    )
-
-    // Verificar se temos um ID válido para obter a próxima etapa
-    if (!perfilIdString) {
-      console.log("[enviarMensagem] ID de perfil inválido, usando resposta fallback")
-
+      // Verificar novamente após um delay para obter a resposta automática
       setTimeout(() => {
-        const mensagemFallback = {
-          id: Date.now() + 100,
-          tipo: "texto",
-          texto: "Estou adorando nossa conversa! Continue me contando mais sobre você.",
-          enviada: false,
-          hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        const conversaComResposta = getConversa(userId, id)
+        if (conversaComResposta && conversaComResposta.mensagens) {
+          setMensagens(sanitizarMensagens(conversaComResposta.mensagens))
+          setEtapaAtual(conversaComResposta.etapaAtual || 0)
         }
-
-        const mensagensAtualizadas = [...mensagensSanitizadas, mensagemFallback]
-        const mensagensFinalSanitizadas = sanitizarMensagens(mensagensAtualizadas)
-
-        // Incrementar etapa
-        const novaEtapa = etapaAtualCorrigida + 1
-        setEtapaAtual(novaEtapa)
-
-        const conversaComFallback = {
-          mensagens: mensagensFinalSanitizadas,
-          etapaAtual: novaEtapa, // Usar etapa incrementada
-          perfilId: perfilIdString || id,
-          ultimaAtualizacao: Date.now(),
-          nome: perfilMatch.nome.split(",")[0],
-          foto: perfilMatch.foto,
-        }
-
-        setMensagens(mensagensFinalSanitizadas)
-        salvarConversa(userId, perfilIdString || id, conversaComFallback)
-      }, 1000)
-
-      return
+      }, 1500)
     }
-
-    // Processar próxima etapa do fluxo
-    const proximaEtapa = obterProximaEtapa(perfilIdString, etapaAtualCorrigida)
-    console.log("[enviarMensagem] Próxima etapa obtida:", proximaEtapa)
-
-    // Verificar se a próxima etapa existe e tem mensagens válidas
-    if (!proximaEtapa || !proximaEtapa.mensagens) {
-      // Criar uma resposta fallback
-      setTimeout(() => {
-        const mensagemFallback = {
-          id: Date.now() + 100,
-          tipo: "texto",
-          texto: "Estou adorando nossa conversa! Continue me contando mais sobre você.",
-          enviada: false,
-          hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        }
-
-        const mensagensAtualizadas = [...mensagensSanitizadas, mensagemFallback]
-
-        // Sanitizar a lista final
-        const mensagensFinalSanitizadas = sanitizarMensagens(mensagensAtualizadas)
-
-        // Incrementar etapa
-        const novaEtapa = etapaAtualCorrigida + 1
-        setEtapaAtual(novaEtapa)
-
-        // Salvar conversa atualizada
-        const conversaComFallback = {
-          mensagens: mensagensFinalSanitizadas,
-          etapaAtual: novaEtapa, // Usar etapa incrementada
-          perfilId: perfilIdString,
-          ultimaAtualizacao: Date.now(),
-          nome: perfilMatch.nome.split(",")[0],
-          foto: perfilMatch.foto,
-        }
-
-        setMensagens(mensagensFinalSanitizadas)
-        salvarConversa(userId, perfilIdString, conversaComFallback)
-      }, 1000)
-
-      return
-    }
-
-    // Verificar se estamos na etapa 1 e se a próxima (etapa 2) contém áudios
-    const verificarEtapaAudio =
-      etapaAtualCorrigida === 1 ||
-      (proximaEtapa && proximaEtapa.mensagens && proximaEtapa.mensagens.some((msg) => verificarAudio(msg)))
-
-    // Verificar se alguma mensagem é nula ou tem texto nulo
-    const temMensagemInvalida = proximaEtapa.mensagens.some((msg) => !msg || !msg.texto)
-    if (temMensagemInvalida) {
-    }
-
-    setTimeout(() => {
-      // Verificar e corrigir mensagens vazias
-      let mensagensEtapa = []
-
-      if (proximaEtapa.mensagens && proximaEtapa.mensagens.length > 0) {
-        mensagensEtapa = proximaEtapa.mensagens.map((msg) => {
-          // Se a mensagem não tiver texto ou for nula
-          if (!msg || !msg.texto) {
-            // Verificar se msg existe, se não criar um novo objeto
-            const msgCorrigida = msg || {}
-            const mensagemCorrigida = {
-              ...msgCorrigida,
-              id: msgCorrigida.id || Date.now() + Math.floor(Math.random() * 1000),
-              tipo: msgCorrigida.tipo || (verificarEtapaAudio ? "audio" : "texto"),
-              texto: "Estou gostando de conversar com você! Continue me contando sobre você.",
-              enviada: false,
-              hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            }
-
-            // Se for áudio, adicionar duração
-            if (verificarEtapaAudio) {
-              mensagemCorrigida.duracao = "0:30"
-            }
-
-            return mensagemCorrigida
-          }
-
-          return {
-            ...msg,
-            id: msg.id || Date.now() + Math.floor(Math.random() * 1000),
-            hora: msg.hora || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            enviada: false,
-          }
-        })
-      } else {
-        // Se não houver mensagens na próxima etapa, criar uma mensagem padrão
-
-        mensagensEtapa = [
-          {
-            id: Date.now() + Math.floor(Math.random() * 1000),
-            tipo: verificarEtapaAudio ? "audio" : "texto",
-            texto: "Isso é muito interessante! O que mais você gosta de fazer?",
-            enviada: false,
-            hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          },
-        ]
-
-        // Se for áudio, adicionar duração
-        if (verificarEtapaAudio) {
-          mensagensEtapa[0].duracao = "0:30"
-        }
-      }
-
-      console.log("[enviarMensagem] Mensagens da etapa processadas:", mensagensEtapa)
-
-      // Se chegamos até aqui, temos mensagens válidas para mostrar
-      const mensagensAtualizadas = [...mensagensSanitizadas, ...mensagensEtapa]
-      console.log("[enviarMensagem] Mensagens atualizadas final:", mensagensAtualizadas)
-
-      // Sanitizar a lista final
-      const mensagensFinalSanitizadas = sanitizarMensagens(mensagensAtualizadas)
-      console.log("[enviarMensagem] Mensagens finais sanitizadas:", mensagensFinalSanitizadas)
-
-      // Incrementar etapa
-      const novaEtapa = etapaAtualCorrigida + 1
-      setEtapaAtual(novaEtapa)
-
-      // Atualizar localStorage com a conversa completa
-      const conversaAtualizada = {
-        mensagens: mensagensFinalSanitizadas,
-        etapaAtual: novaEtapa, // Usar etapa incrementada
-        perfilId: perfilIdString,
-        ultimaAtualizacao: Date.now(),
-        nome: perfilMatch.nome.split(",")[0],
-        foto: perfilMatch.foto,
-      }
-
-      console.log("[enviarMensagem] Salvando conversa final:", conversaAtualizada)
-      setMensagens(mensagensFinalSanitizadas)
-      salvarConversa(userId, perfilIdString, conversaAtualizada)
-    }, 1000)
-  }
-
-  // Função para enviar uma mensagem de áudio de teste
-  const enviarAudioTeste = () => {
-    console.log("[enviarAudioTeste] Iniciando envio de áudio de teste")
-    console.log("[enviarAudioTeste] Estado atual - UserId:", userId, "PerfilMatch:", perfilMatch)
-
-    if (!userId || !perfilMatch) {
-      console.log("[enviarAudioTeste] Cancelando envio - dados inválidos")
-      return
-    }
-
-    // Garantir que o ID do perfil é armazenado corretamente
-    const perfilIdString = perfilMatch && perfilMatch.id ? String(perfilMatch.id) : id
-    console.log("[enviarAudioTeste] ID do perfil convertido para string:", perfilIdString)
-
-    console.log("[enviarAudioTeste] Criando objeto de mensagem de áudio")
-
-    // Criar mensagem de áudio com todas as propriedades necessárias
-    const mensagemAudio = {
-      id: Date.now(),
-      tipo: "audio",
-      texto: "Isso é uma mensagem de áudio de teste",
-      duracao: "0:15",
-      enviada: false,
-      hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    }
-
-    console.log("[enviarAudioTeste] Mensagem de áudio criada:", mensagemAudio)
-    console.log("[enviarAudioTeste] Verificando tipo de mensagem:", mensagemAudio.tipo === "audio")
-
-    // Adicionar a mensagem de áudio às mensagens existentes
-    const novasMensagens = [...mensagens, mensagemAudio]
-    console.log("[enviarAudioTeste] Lista de mensagens atualizada:", novasMensagens)
-
-    // Sanitizar mensagens para garantir consistência
-    const mensagensSanitizadas = sanitizarMensagens(novasMensagens)
-    console.log("[enviarAudioTeste] Mensagens sanitizadas:", mensagensSanitizadas)
-
-    // Debugar a primeira mensagem de áudio
-    const mensagemAudioNoArray = mensagensSanitizadas.find((m) => m.tipo === "audio")
-    console.log("[enviarAudioTeste] Verificação da mensagem de áudio no array:", verificarAudio(mensagemAudioNoArray))
-
-    // Atualizar o estado de mensagens
-    setMensagens(mensagensSanitizadas)
-
-    // Salvar conversa atualizada com informações completas
-    const conversaAtualizada = {
-      mensagens: mensagensSanitizadas,
-      etapaAtual,
-      perfilId: perfilIdString, // Garantir que é string e armazenar
-      ultimaAtualizacao: Date.now(),
-      nome: perfilMatch.nome.split(",")[0], // Garantir que o nome está salvo
-      foto: perfilMatch.foto, // Garantir que a foto está salva
-    }
-
-    console.log("[enviarAudioTeste] Salvando conversa atualizada:", conversaAtualizada)
-    salvarConversa(userId, perfilIdString, conversaAtualizada)
-
-    // Adicionar uma resposta automática após o áudio
-    setTimeout(() => {
-      console.log("[enviarAudioTeste] Adicionando resposta automática ao áudio")
-      const respostaAoAudio = {
-        id: Date.now() + Math.floor(Math.random() * 1000),
-        tipo: "texto",
-        texto: "Espero que você tenha gostado do meu áudio! O que achou?",
-        enviada: false,
-        hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      }
-
-      console.log("[enviarAudioTeste] Resposta ao áudio criada:", respostaAoAudio)
-
-      const mensagensComResposta = [...mensagensSanitizadas, respostaAoAudio]
-      console.log("[enviarAudioTeste] Lista de mensagens com resposta:", mensagensComResposta)
-
-      // Sanitizar mensagens finais
-      const mensagensFinalSanitizadas = sanitizarMensagens(mensagensComResposta)
-      console.log("[enviarAudioTeste] Mensagens finais sanitizadas:", mensagensFinalSanitizadas)
-
-      setMensagens(mensagensFinalSanitizadas)
-
-      // Atualizar localStorage com a conversa completa
-      const conversaComResposta = {
-        mensagens: mensagensFinalSanitizadas,
-        etapaAtual,
-        perfilId: perfilIdString, // Garantir que é string e armazenar
-        ultimaAtualizacao: Date.now(),
-        nome: perfilMatch.nome.split(",")[0],
-        foto: perfilMatch.foto,
-      }
-
-      console.log("[enviarAudioTeste] Salvando conversa com resposta ao áudio:", conversaComResposta)
-      salvarConversa(userId, perfilIdString, conversaComResposta)
-    }, 2000)
   }
 
   // Voltar para a lista de contatos
@@ -898,10 +477,7 @@ export default function Chat() {
         }}
       >
         <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            enviarMensagem(novaMensagem)
-          }}
+          onSubmit={handleEnviarMensagem}
           style={{
             display: "flex",
             width: "100%",
@@ -927,36 +503,7 @@ export default function Chat() {
               padding: "10px 15px",
             }}
           />
-          {/* Botão de teste para áudio */}
-          <button
-            type="button"
-            onClick={enviarAudioTeste}
-            style={{
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              marginRight: "10px",
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M19 10v2a7 7 0 0 1-14 0v-2"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path d="M12 19v4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M8 23h8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          {/* Removido o botão de áudio, pois o usuário não deve enviar áudios */}
           <button
             type="submit"
             style={{
