@@ -708,98 +708,127 @@ export default function Contatos() {
       )
     }
 
-    return contatosLista.map((contato) => (
-      <div
-        key={contato.id}
-        className={`contato-item ${contatoAtivo?.id === contato.id ? "ativo" : ""}`}
-        onClick={() => selecionarContato(contato.id)}
-        style={{
-          display: "flex",
-          padding: "15px",
-          cursor: "pointer",
-          backgroundColor: "black",
-        }}
-      >
+    return contatosLista.map((contato) => {
+      // Verificar se a última mensagem é de áudio
+      const ultimaMensagemAudio = contato.mensagens && contato.mensagens.length > 0 
+        ? contato.mensagens[contato.mensagens.length - 1].tipo === "audio"
+        : false
+        
+      const duracaoAudio = ultimaMensagemAudio && contato.mensagens && contato.mensagens.length > 0 
+        ? contato.mensagens[contato.mensagens.length - 1].duracao
+        : "0:00"
+      
+      return (
         <div
-          className="contato-foto"
+          key={contato.id}
+          className={`contato-item ${contatoAtivo?.id === contato.id ? "ativo" : ""}`}
+          onClick={() => selecionarContato(contato.id)}
           style={{
-            position: "relative",
-            marginRight: "15px",
-          }}
-        >
-          <img
-            src={contato.imagem || "/placeholder.svg"}
-            alt={contato.nome}
-            style={{
-              width: "50px",
-              height: "50px",
-              borderRadius: "50%",
-              objectFit: "cover",
-            }}
-          />
-          {contato.online && (
-            <span
-              style={{
-                position: "absolute",
-                bottom: "3px",
-                right: "3px",
-                width: "12px",
-                height: "12px",
-                backgroundColor: "#4CAF50",
-                borderRadius: "50%",
-                border: "2px solid white",
-              }}
-            ></span>
-          )}
-        </div>
-        <div
-          className="contato-info"
-          style={{
-            flex: 1,
-            overflow: "hidden",
+            display: "flex",
+            padding: "15px",
+            cursor: "pointer",
+            backgroundColor: "black",
           }}
         >
           <div
+            className="contato-foto"
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "5px",
+              position: "relative",
+              marginRight: "15px",
             }}
           >
-            <h3
+            <img
+              src={contato.imagem || "/placeholder.svg"}
+              alt={contato.nome}
+              style={{
+                width: "50px",
+                height: "50px",
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+            />
+            {contato.online && (
+              <span
+                style={{
+                  position: "absolute",
+                  bottom: "3px",
+                  right: "3px",
+                  width: "12px",
+                  height: "12px",
+                  backgroundColor: "#4CAF50",
+                  borderRadius: "50%",
+                  border: "2px solid white",
+                }}
+              ></span>
+            )}
+          </div>
+          <div
+            className="contato-info"
+            style={{
+              flex: 1,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "5px",
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: "16px",
+                  fontWeight: "bold",
+                }}
+              >
+                {contato.nome}
+              </h3>
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: "#999",
+                }}
+              >
+                {contato.horaUltimaMensagem}
+              </span>
+            </div>
+            <p
               style={{
                 margin: 0,
-                fontSize: "16px",
-                fontWeight: "bold",
+                fontSize: "14px",
+                color: "#666",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                display: "flex",
+                alignItems: "center",
               }}
             >
-              {contato.nome}
-            </h3>
-            <span
-              style={{
-                fontSize: "12px",
-                color: "#999",
-              }}
-            >
-              {contato.horaUltimaMensagem}
-            </span>
+              {ultimaMensagemAudio ? (
+                <>
+                  <svg 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ marginRight: "5px", fill: "#00e5c0" }}
+                  >
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3s-3 1.34-3 3v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-2.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                  </svg>
+                  <span>Mensagem de áudio ({duracaoAudio})</span>
+                </>
+              ) : (
+                contato.ultimaMensagem
+              )}
+            </p>
           </div>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "14px",
-              color: "#666",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {contato.ultimaMensagem}
-          </p>
         </div>
-      </div>
-    ))
+      )
+    })
   }
 
   // Função para renderizar as mensagens do chat ativo

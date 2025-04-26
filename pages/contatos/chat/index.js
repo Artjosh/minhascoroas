@@ -241,7 +241,7 @@ export default function Chat() {
         setEtapaAtual(conversaAtualizada.etapaAtual || 0)
       }
 
-      // Verificar novamente após um delay para obter a resposta automática
+      // Verificar novamente após um delay para obter a primeira resposta automática
       setTimeout(() => {
         const conversaComResposta = getConversa(userId, id)
         if (conversaComResposta && conversaComResposta.mensagens) {
@@ -249,6 +249,15 @@ export default function Chat() {
           setEtapaAtual(conversaComResposta.etapaAtual || 0)
         }
       }, 1500)
+      
+      // Verificar novamente após um delay maior para obter a segunda resposta (caso seja a etapa inicial)
+      setTimeout(() => {
+        const conversaFinal = getConversa(userId, id)
+        if (conversaFinal && conversaFinal.mensagens) {
+          setMensagens(sanitizarMensagens(conversaFinal.mensagens))
+          setEtapaAtual(conversaFinal.etapaAtual || 0)
+        }
+      }, 4000)
     }
   }
 
@@ -322,20 +331,6 @@ export default function Chat() {
                 objectFit: "cover",
               }}
             />
-            {usuario.online && (
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  backgroundColor: "#4CAF50",
-                  borderRadius: "50%",
-                  position: "absolute",
-                  bottom: "2px",
-                  right: "2px",
-                  border: "2px solid #8319C1",
-                }}
-              />
-            )}
           </div>
 
           <div>
@@ -348,20 +343,33 @@ export default function Chat() {
             >
               {usuario.nome}
             </h2>
-            <span
-              style={{
-                fontSize: "12px",
-                color: "green",
-                opacity: 0,
-              }}
-            >
-              {usuario.online ? "Online" : "Offline"}
-            </span>
+            <div style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                marginTop: "2px" 
+            }}>
+              {usuario.online && (
+                <div
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    backgroundColor: "#4CAF50",
+                    borderRadius: "50%",
+                    marginRight: "5px",
+                  }}
+                />
+              )}
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: "#4CAF50",
+                  opacity: usuario.online ? 1 : 0,
+                }}
+              >
+                Online
+              </span>
+            </div>
           </div>
-        </div>
-
-        <div>
-          <img src="/images/tresPontos.png" alt="Menu" width="20px" height="20px" />
         </div>
       </div>
 
@@ -413,11 +421,17 @@ export default function Chat() {
               }}
             >
               {isAudio ? (
-                <AudioMessage mensagem={mensagem} enviada={mensagem.enviada} />
+                <AudioMessage 
+                  mensagem={{
+                    ...mensagem,
+                    userImage: usuario.foto // Adicionando a foto do usuário à mensagem
+                  }} 
+                  enviada={mensagem.enviada} 
+                />
               ) : (
                 <div
                   style={{
-                    backgroundColor: mensagem.enviada ? "#DCF8C6" : "white",
+                    backgroundColor: mensagem.enviada ? "#103529" : "#262d31",
                     borderRadius: "10px",
                     padding: "8px 12px",
                     maxWidth: "70%",
@@ -429,6 +443,7 @@ export default function Chat() {
                       margin: 0,
                       fontSize: "14px",
                       lineHeight: 1.4,
+                      color: "white",
                     }}
                   >
                     {mensagem.texto || "..."}
