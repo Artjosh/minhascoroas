@@ -305,20 +305,14 @@ export const obterProximaEtapa = (perfilId, etapaAtual) => {
   return perfil.etapas[etapaAtualNum];
 };
 
-// Função para verificar se uma mensagem é de áudio
-export const isAudioMessage = (mensagem) => {
-  
-  return mensagem?.tipo === "audio";
-};
-
 // Função para obter o estado inicial de uma conversa
 export const getEstadoInicialConversa = (perfilId) => {
   console.log(`[getEstadoInicialConversa] Criando estado inicial para perfilId: ${perfilId}`);
   return {
-    etapaAtual: 1, // Começar na etapa 1, não na etapa 0
-    mensagens: [],
-    perfilId,
-    ultimaAtualizacao: Date.now()
+    etapaAtual: 0, // Começar na etapa 1, não na etapa 0
+  mensagens: [],
+  perfilId,
+  ultimaAtualizacao: Date.now()
   };
 };
 
@@ -381,7 +375,6 @@ export const obterTodasConversasLocal = (userId) => {
 export default {
   fluxosConversa,
   obterProximaEtapa,
-  isAudioMessage,
   getEstadoInicialConversa,
   salvarConversaLocal,
   obterConversaLocal,

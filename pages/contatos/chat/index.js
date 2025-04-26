@@ -9,8 +9,7 @@ import {
   obterConversaLocal, 
   salvarConversaLocal, 
   obterProximaEtapa,
-  getEstadoInicialConversa,
-  isAudioMessage
+  getEstadoInicialConversa
 } from '../../../data/conversas';
 import mockData, { perfis } from '../../../data/mock';
 import AudioMessage from '../../../components/AudioMessage';
@@ -118,7 +117,7 @@ export default function Chat() {
           
           // Usar conversa salva
           setMensagens(mensagensSanitizadas);
-          setEtapaAtual(conversaSalva.etapaAtual || 1);
+          setEtapaAtual(conversaSalva.etapaAtual || 0);
           
           // Atualizar a conversa salva com as mensagens sanitizadas
           const conversaCorrigida = {
@@ -254,14 +253,14 @@ export default function Chat() {
           perfilId: conversaExistente.perfilId || id // Garantir que o perfilId está definido
         });
         
-        setUsuario({
+      setUsuario({
           id: id,
           nome: conversaExistente.nome || "Contato",
           foto: conversaExistente.foto || "/images/avatar.jpg",
-          online: isOnline(id)
-        });
+        online: isOnline(id)
+      });
         
-        setLoading(false);
+      setLoading(false);
       } else {
         // Se tudo falhar, redirecionar para a lista de contatos
         console.log('Nenhuma conversa encontrada, redirecionando para contatos');
@@ -284,14 +283,7 @@ export default function Chat() {
     }
   }, [mensagens]);
   
-  // Adicionar uma inicialização segura no início do componente
-  useEffect(() => {
-    // Garantir que etapaAtual nunca comece com 0
-    if (etapaAtual === 0) {
-      console.log('[useEffect] Corrigindo etapaAtual de 0 para 1');
-      setEtapaAtual(1);
-    }
-  }, []);
+
   
   // Função para enviar uma nova mensagem
   const enviarMensagem = async (texto) => {
@@ -381,7 +373,7 @@ export default function Chat() {
       
       return;
     }
-    
+
     // Processar próxima etapa do fluxo
     const proximaEtapa = obterProximaEtapa(perfilIdString, etapaAtualCorrigida);
     console.log('[enviarMensagem] Próxima etapa obtida:', proximaEtapa);
@@ -518,7 +510,7 @@ export default function Chat() {
       console.log('[enviarMensagem] Salvando conversa final:', conversaAtualizada);
       setMensagens(mensagensFinalSanitizadas);
       salvarConversaLocal(userId, perfilIdString, conversaAtualizada);
-    }, 1000);
+      }, 1000);
   };
   
   // Função para enviar uma mensagem de áudio de teste
@@ -752,40 +744,40 @@ export default function Chat() {
           console.log('[render] É áudio?', isAudio);
           
           return (
-            <div 
-              key={mensagem.id} 
-              style={{
-                display: 'flex',
+          <div 
+            key={mensagem.id} 
+            style={{
+              display: 'flex',
                 justifyContent: mensagem.enviada ? 'flex-end' : 'flex-start',
                 marginBottom: '15px'
-              }}
-            >
+            }}
+          >
               {isAudio ? (
                 <AudioMessage mensagem={mensagem} enviada={mensagem.enviada} />
               ) : (
-                <div style={{
+            <div style={{
                   backgroundColor: mensagem.enviada ? '#DCF8C6' : 'white',
-                  borderRadius: '10px',
-                  padding: '8px 12px',
-                  maxWidth: '70%',
-                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
-                }}>
-                  <p style={{ 
-                    margin: 0, 
-                    fontSize: '14px', 
-                    lineHeight: 1.4
-                  }}>
+              borderRadius: '10px',
+              padding: '8px 12px',
+              maxWidth: '70%',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+            }}>
+              <p style={{ 
+                margin: 0, 
+                fontSize: '14px', 
+                lineHeight: 1.4
+              }}>
                     {mensagem.texto || "..."}
-                  </p>
-                  <span style={{ 
-                    fontSize: '10px', 
-                    color: '#999',
-                    display: 'block',
-                    textAlign: 'right',
-                    marginTop: '2px'
-                  }}>
+              </p>
+              <span style={{ 
+                fontSize: '10px', 
+                color: '#999',
+                display: 'block',
+                textAlign: 'right',
+                marginTop: '2px'
+              }}>
                     {mensagem.hora || "Agora"}
-                  </span>
+              </span>
                 </div>
               )}
             </div>

@@ -429,7 +429,7 @@ export default function Contatos() {
                 }];
                 novaConversa.ultimaMensagem = mensagensIniciais[0].texto;
                 novaConversa.horaUltimaMensagem = agora;
-                novaConversa.etapaAtual = 1; // Primeira etapa já foi adicionada
+                novaConversa.etapaAtual = 0; // Primeira etapa já foi adicionada
               }
             }
           }
