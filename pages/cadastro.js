@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 import { useUtmParams } from '../components/UtmManager';
 import { supabaseClient } from '../lib/supabase';
+import { saveUserData } from '../lib/auth';
 
 export default function Cadastro() {
   const { redirectWithUtm } = useUtmParams();
@@ -110,7 +111,7 @@ export default function Cadastro() {
         throw new Error(data.error);
       }
 
-      console.log('Resposta da API:', data); // Para depuração
+      
       
       // Verificar se a resposta está no formato esperado
       if (!data.usuario) {
@@ -129,7 +130,7 @@ export default function Cadastro() {
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('userId', data.usuario.id);
       
-      console.log('Dados salvos:', {
+      
         userId: data.usuario.id,
         token: data.token ? 'presente' : 'ausente'
       });
@@ -171,12 +172,12 @@ export default function Cadastro() {
       // Se não tiver no estado, tenta recuperar do localStorage
       if (!userIdToUse) {
         userIdToUse = localStorage.getItem('userId');
-        console.log('userId recuperado do localStorage:', userIdToUse);
+        
       }
       
       if (!tokenToUse) {
         tokenToUse = localStorage.getItem('authToken');
-        console.log('token recuperado do localStorage:', tokenToUse ? 'presente' : 'ausente');
+        
       }
       
       if (!userIdToUse) {
@@ -211,7 +212,7 @@ export default function Cadastro() {
         formData.append('foto', foto);
       });
       
-      console.log('Enviando dados de perfil:', {
+      
         userId: userIdToUse,
         bio,
         interesses,
@@ -234,6 +235,21 @@ export default function Cadastro() {
       
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao completar perfil');
+      }
+      
+      // Perfil completado com sucesso
+      // Salvar dados do usuário no localStorage usando a mesma função que é usada no login
+      // Utilize o token existente junto com os dados do usuário atualizados
+      if (data.usuario) {
+        saveUserData({
+          token: tokenToUse,
+          id: data.usuario.id,
+          nome: data.usuario.nome,
+          email: data.usuario.email,
+          foto: data.usuario.foto || '/images/user-placeholder.jpg'
+        });
+        
+        
       }
       
       // Redirecionar para a página principal

@@ -3,11 +3,13 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useUtmParams } from '../components/UtmManager';
 import { isUserLoggedIn } from '../lib/auth';
+import { obterNotificacoes } from '../lib/likes-utils';
 
 export default function Home() {
   const router = useRouter();
   const { redirectWithUtm } = useUtmParams();
   const [userLogado, setUserLogado] = useState(false);
+  const [notificacoesNaoLidas, setNotificacoesNaoLidas] = useState(0);
   
   useEffect(() => {
     // Verificar se o usuário está logado ao montar o componente
@@ -15,6 +17,11 @@ export default function Home() {
     if (user) {
       try {
         setUserLogado(true);
+        
+        // Verificar notificações não lidas
+        const todasNotificacoes = obterNotificacoes();
+        const naoLidas = todasNotificacoes.filter(n => !n.lida).length;
+        setNotificacoesNaoLidas(naoLidas);
         
         // Redirecionar para a página de timeline automaticamente
         // Pequeno delay para garantir que o state seja atualizado
@@ -75,11 +82,32 @@ export default function Home() {
                   marginTop: '15px',
                   fontSize: '18px',
                   cursor: 'pointer',
-                  marginRight: '10px'
+                  marginRight: '10px',
+                  position: 'relative'
                 }}
                 onClick={() => redirectWithUtm('/curtidas')}
               >
                 Timeline
+                {notificacoesNaoLidas > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-8px',
+                    right: '-8px',
+                    backgroundColor: '#FF4D67',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: '22px',
+                    height: '22px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    border: '2px solid white'
+                  }}>
+                    {notificacoesNaoLidas > 9 ? '9+' : notificacoesNaoLidas}
+                  </span>
+                )}
               </button>
               
               <button 

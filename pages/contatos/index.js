@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useUtmParams } from '../../components/UtmManager';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { isUserLoggedIn, getUserData, getAuthHeaders } from '../../lib/auth';
-import mockData from '../../data/mock';
+import mockData, { mulheres } from '../../data/mock';
 import BottomNavigation from '../../components/BottomNavigation';
 import { 
   getCurrentMatch, 
@@ -17,10 +17,15 @@ import {
   salvarConversa,
   getConversa,
   inicializarConversa,
-  isOnline
+  isOnline,
+  adicionarNovoMatch
 } from '../../lib/chat-utils';
-import { contatosBase } from '../../data/mock';
-import { obterTodasConversasLocal } from '../../data/conversas';
+import { 
+  obterTodasConversasLocal, 
+  salvarConversaLocal,
+  obterConversaLocal,
+  getEstadoInicialConversa 
+} from '../../data/conversas';
 
 // Tempo entre verificações automáticas em milissegundos (aumentado para reduzir requests)
 const POLLING_INTERVAL = 30000; // 30 segundos
@@ -87,6 +92,7 @@ export default function Contatos() {
   const [userId, setUserId] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [ultimaVerificacao, setUltimaVerificacao] = useState(0);
+  const [semMatches, setSemMatches] = useState(false);
   
   // Função para verificar se há um novo match no localStorage
   const verificarNovoMatch = useCallback(async () => {
@@ -95,13 +101,16 @@ export default function Contatos() {
       const matchedProfile = getCurrentMatch();
       
       if (matchedProfile) {
-        console.log('Novo match encontrado:', matchedProfile.nome);
+        
         setCurrentMatch(matchedProfile);
         
         // Extrair apenas primeiro nome
         const nomePrimeiro = matchedProfile.nome.includes(',') 
           ? matchedProfile.nome.split(',')[0] 
           : matchedProfile.nome;
+        
+        // Inicializar nova conversa
+        adicionarNovoMatch(userId, matchedProfile);
         
         // Verificar se já existe uma conversa com este match
         const conversaExistente = getConversa(userId, matchedProfile.id);
@@ -141,6 +150,25 @@ export default function Contatos() {
         setContatoAtivo(novoContato);
         setShowMobile('chat');
         
+        // Atualizar idmatches no localStorage
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const userObj = JSON.parse(userData);
+          if (userObj.idmatches) {
+            // Se já existir, adicionar o novo match se não estiver lá
+            if (!userObj.idmatches.includes(matchedProfile.id)) {
+              userObj.idmatches.push(matchedProfile.id);
+              localStorage.setItem('user', JSON.stringify(userObj));
+              
+            }
+          } else {
+            // Se não existir, criar com o novo match
+            userObj.idmatches = [matchedProfile.id];
+            localStorage.setItem('user', JSON.stringify(userObj));
+            
+          }
+        }
+        
         // Remover do localStorage para não mostrar novamente
         clearCurrentMatch();
         
@@ -177,7 +205,7 @@ export default function Contatos() {
       if (!forceUpdate) {
         const cachedMatches = getMatchesFromCache(userId);
         if (cachedMatches && cachedMatches.length > 0) {
-          console.log('Usando matches do cache:', cachedMatches.length);
+          
           
           // Criar objetos de contato a partir dos matchIds em cache
           const perfilMatches = processMatchIds(cachedMatches);
@@ -217,6 +245,10 @@ export default function Contatos() {
             
             // Caso seja um novo contato, inicializar conversa
             const novaConversa = inicializarConversa(perfil);
+            
+            // Salvar a conversa inicializada no localStorage
+            adicionarNovoMatch(userId, perfil);
+            
             return {
               ...infoContato,
               ultimaMensagem: novaConversa.ultimaMensagem,
@@ -226,6 +258,12 @@ export default function Contatos() {
           });
           
           setContatosLista(contatosMatches);
+          if (contatosMatches.length === 0) {
+            setSemMatches(true);
+          } else {
+            setSemMatches(false);
+          }
+          
           await verificarNovoMatch();
           setCarregando(false);
           setUltimaVerificacao(agora);
@@ -239,11 +277,11 @@ export default function Contatos() {
         }
       }
       
-      console.log('Verificando matches para usuário:', userId);
+      
       
       // Buscar matches diretamente do banco de dados
       const matchIds = await getMatchesFromDatabase(userId);
-      console.log('IDs de match encontrados:', matchIds);
+      
       
       // Atualizar o timestamp da última verificação
       setUltimaVerificacao(agora);
@@ -253,16 +291,20 @@ export default function Contatos() {
         saveMatchesToCache(userId, matchIds);
       }
       
-      // Se não houver matches, verificar apenas os da localStorage
+      // Se não houver matches, mostrar mensagem
       if (!matchIds || matchIds.length === 0) {
+        setSemMatches(true);
+        setContatosLista([]);
         await verificarNovoMatch();
         setCarregando(false);
         return;
+      } else {
+        setSemMatches(false);
       }
       
       // Processar os IDs de match para obter objetos de perfil completos
       const perfilMatches = processMatchIds(matchIds);
-      console.log('Perfis de match processados:', perfilMatches.length);
+      
       
       // Criar objetos de contato a partir dos perfis
       const contatosMatches = perfilMatches.map(perfil => {
@@ -299,6 +341,10 @@ export default function Contatos() {
         
         // Caso seja um novo contato, inicializar conversa
         const novaConversa = inicializarConversa(perfil);
+        
+        // Salvar a conversa inicializada no localStorage
+        adicionarNovoMatch(userId, perfil);
+        
         return {
           ...infoContato,
           ultimaMensagem: novaConversa.ultimaMensagem,
@@ -323,74 +369,243 @@ export default function Contatos() {
   // Função para verificar matches em background (sem atualizar UI)
   const verificarMatchesBackground = async (userId) => {
     try {
-      console.log('Verificando matches em background...');
+      
       const matchIds = await getMatchesFromDatabase(userId);
       
-      if (matchIds && matchIds.length > 0) {
+      if (matchIds) {
         // Apenas atualizar o cache
         saveMatchesToCache(userId, matchIds);
-        console.log('Cache atualizado em background');
+        
       }
     } catch (error) {
       console.error('Erro ao verificar matches em background:', error);
     }
   };
   
-  // Carregar dados iniciais
-  useEffect(() => {
-    if (isUserLoggedIn()) {
-      console.log("Contatos: Usuário logado, carregando dados...");
-      const userInfo = getUserData();
-      setUserId(userInfo.id);
+  // Função para verificar e criar chats para cada match
+  const verificarECriarChatsParaIdMatches = useCallback((userId, idmatches) => {
+    if (!userId || !idmatches || !Array.isArray(idmatches) || idmatches.length === 0) {
       
-      console.log("Contatos: Carregando conversas do localStorage...");
-      // Carregar conversas do localStorage
-      const conversas = obterTodasConversasLocal(userInfo.id);
-      console.log("Contatos: Conversas locais carregadas:", Object.keys(conversas).length);
+      return;
+    }
+    
+    
+    
+    idmatches.forEach(idMatch => {
+      // Verificar se já existe uma conversa salva
+      const conversaExistente = obterConversaLocal(userId, idMatch);
       
-      // Combinar dados mockados com conversas salvas
-      const contatosAtualizados = contatosBase.map(contato => {
-        const conversaSalva = conversas[contato.id];
-        if (conversaSalva) {
-          console.log(`Contatos: Conversa salva encontrada para ${contato.nome}`);
-          return {
-            ...contato,
-            ...conversaSalva
-          };
+      if (!conversaExistente) {
+        
+        
+        // Buscar o perfil correspondente ao match
+        const perfilMatch = mulheres.find(p => p.id.toString() === idMatch.toString());
+        
+        if (perfilMatch) {
+          // Criar um estado inicial de conversa
+          const novaConversa = getEstadoInicialConversa(idMatch);
+          
+          // Adicionar informações do perfil para facilitar a visualização
+          novaConversa.nome = perfilMatch.nome;
+          novaConversa.foto = perfilMatch.foto || perfilMatch.imagem;
+          
+          // Verificar se há mensagens iniciais na estrutura contatosBase
+          if (perfilMatch.contatosBase && perfilMatch.contatosBase.length > 0) {
+            const contatoBase = perfilMatch.contatosBase[0];
+            
+            if (contatoBase.mensagens && contatoBase.mensagens.length > 0) {
+              // Usar apenas a primeira mensagem do contato base (não enviada pelo usuário)
+              const mensagensIniciais = contatoBase.mensagens.filter(m => !m.enviada);
+              
+              if (mensagensIniciais.length > 0) {
+                // Adicionar a primeira mensagem que não foi enviada pelo usuário
+                const agora = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                novaConversa.mensagens = [{
+                  id: Date.now(),
+                  tipo: 'texto',
+                  texto: mensagensIniciais[0].texto,
+                  enviada: false,
+                  hora: agora
+                }];
+                novaConversa.ultimaMensagem = mensagensIniciais[0].texto;
+                novaConversa.horaUltimaMensagem = agora;
+                novaConversa.etapaAtual = 1; // Primeira etapa já foi adicionada
+              }
+            }
+          }
+          
+          // Salvar a nova conversa no localStorage
+          salvarConversaLocal(userId, idMatch, novaConversa);
+          
+        } else {
+          console.warn(`Não foi possível encontrar perfil para o ID: ${idMatch}`);
         }
-        return contato;
-      });
-      
-      console.log("Contatos: Contatos atualizados:", contatosAtualizados.length);
-      setContatosLista(contatosAtualizados);
-      
-      // Fazer a primeira verificação de matches aqui
-      if (!window.matchesCarregados) {
-        console.log("Contatos: Primeira carga de matches...");
-        window.matchesCarregados = true;
-        verificarMatches(userInfo.id, true);
+      } else {
+        
       }
-      
-      setCarregando(false);
-    } else {
-      console.log("Contatos: Usuário não logado, redirecionando...");
-      redirectWithUtm('/login');
+    });
+    
+    // Verificar todas as conversas salvas
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith(`chat_${userId}_`)) {
+        
+      }
     }
   }, []);
   
-  // Modificar o useEffect de polling
-  useEffect(() => {
+  // Função para carregar os contatos diretamente do localStorage
+  const carregarContatosDoLocalStorage = useCallback((userId) => {
     if (!userId) return;
     
-    // Remover verificação inicial aqui, já que foi movida para o primeiro useEffect
-    const pollInterval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        verificarMatches(userId, false);
-      }
-    }, POLLING_INTERVAL * 5);
     
-    return () => clearInterval(pollInterval);
-  }, [userId, verificarMatches]);
+    
+    try {
+      // Usar a função obterTodasConversasLocal para pegar todas as conversas
+      const conversas = obterTodasConversasLocal(userId);
+      const idsChats = Object.keys(conversas);
+      
+      
+      
+      if (idsChats.length === 0) {
+        setSemMatches(true);
+        return;
+      }
+      
+      // Transformar as conversas em objetos de contato para exibição na UI
+      const listaContatos = idsChats.map(matchId => {
+        const conversa = conversas[matchId];
+        
+        // Buscar perfil completo do match (para ter acesso a foto, etc)
+        const perfilMatch = mulheres.find(p => p.id.toString() === matchId.toString());
+        
+        // Extrair nome do perfil (removendo a idade se estiver no formato "Nome, XX")
+        let nomeExibicao = conversa.nome || "Contato";
+        if (nomeExibicao.includes(',')) {
+          nomeExibicao = nomeExibicao.split(',')[0];
+        }
+        
+        return {
+          id: matchId,
+          nome: nomeExibicao,
+          imagem: conversa.foto || (perfilMatch ? perfilMatch.foto || perfilMatch.imagem : '/images/avatar.jpg'),
+          online: isOnline(matchId), // Status online
+          mensagens: conversa.mensagens || [],
+          ultimaMensagem: conversa.ultimaMensagem || "",
+          horaUltimaMensagem: conversa.horaUltimaMensagem || ""
+        };
+      });
+      
+      // Ordenar contatos pela hora da última mensagem (mais recentes primeiro)
+      listaContatos.sort((a, b) => {
+        if (!a.horaUltimaMensagem) return 1;
+        if (!b.horaUltimaMensagem) return -1;
+        return 0; // Manter a ordem atual se não tiver timestamp
+      });
+      
+      
+      
+      setSemMatches(false);
+      setContatosLista(listaContatos);
+    } catch (error) {
+      console.error('Erro ao carregar contatos do localStorage:', error);
+      setSemMatches(true);
+    }
+  }, []);
+  
+  // Modificar o useEffect de carregamento inicial
+  useEffect(() => {
+    if (isUserLoggedIn()) {
+      
+      const userInfo = getUserData();
+      setUserId(userInfo.id);
+      setCarregando(true);
+      
+      // Primeira etapa: verificar se o usuário tem idmatches no localStorage
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const userObj = JSON.parse(userData);
+          if (userObj.idmatches && Array.isArray(userObj.idmatches) && userObj.idmatches.length > 0) {
+            
+            verificarECriarChatsParaIdMatches(userInfo.id, userObj.idmatches);
+            
+            // Após criar os chats, carregar os contatos do localStorage
+            carregarContatosDoLocalStorage(userInfo.id);
+            
+            // Não precisamos buscar mais matches da API, já temos no localStorage
+            setCarregando(false);
+          } else {
+            
+            
+            // Segunda etapa: se não tiver matches no localStorage, fazer uma única requisição à API
+            // Sem o uso da função verificarMatches que pode causar chamadas duplicadas
+            fetchMatchesFromAPI(userInfo.id);
+          }
+        } else {
+          // Se não tiver dados do usuário, também fazer uma requisição
+          
+          fetchMatchesFromAPI(userInfo.id);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar idmatches:', error);
+        // Em caso de erro, também tenta fazer uma requisição
+        fetchMatchesFromAPI(userInfo.id);
+      }
+    } else {
+      
+      redirectWithUtm('/login');
+    }
+  }, [redirectWithUtm, verificarECriarChatsParaIdMatches, carregarContatosDoLocalStorage]);
+  
+  // Nova função para fazer uma única requisição à API
+  const fetchMatchesFromAPI = async (userId) => {
+    
+    try {
+      // Usar a API existente, mas com uma única chamada
+      const response = await fetch(`/api/matches?userId=${userId}`, {
+        headers: getAuthHeaders()
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erro ao buscar matches da API');
+      }
+      
+      const data = await response.json();
+      const matchIds = data.matches;
+      
+      // Atualizar o localStorage com os IDs de matches
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const userObj = JSON.parse(userData);
+        userObj.idmatches = matchIds;
+        localStorage.setItem('user', JSON.stringify(userObj));
+        
+        
+        // Criar chats para os matches
+        if (matchIds && matchIds.length > 0) {
+          verificarECriarChatsParaIdMatches(userId, matchIds);
+          
+          // Depois de criar os chats, carregar os contatos do localStorage
+          carregarContatosDoLocalStorage(userId);
+          setSemMatches(matchIds.length === 0);
+        } else {
+          
+          setSemMatches(true);
+        }
+      }
+      
+      // Verificar se há um match atual para processar
+      await verificarNovoMatch();
+      
+    } catch (error) {
+      console.error('Erro ao buscar matches da API:', error);
+      setSemMatches(true);
+    } finally {
+      setCarregando(false);
+    }
+  };
   
   // Função para selecionar um contato
   const selecionarContato = (id) => {
@@ -433,21 +648,25 @@ export default function Contatos() {
     setContatoAtivo(contatoAtualizado);
     setMensagem('');
     
-    // Salvar conversa no localStorage
+    // Salvar conversa no localStorage usando a nova função
     if (userId) {
-      salvarConversa(
-        userId, 
-        contatoAtivo.id, 
-        contatoAtualizado.mensagens, 
-        contatoAtualizado.ultimaMensagem, 
-        contatoAtualizado.horaUltimaMensagem
-      );
+      // Estrutura completa para salvar
+      const dadosConversa = {
+        mensagens: contatoAtualizado.mensagens,
+        ultimaMensagem: contatoAtualizado.ultimaMensagem,
+        horaUltimaMensagem: contatoAtualizado.horaUltimaMensagem,
+        nome: contatoAtualizado.nome,
+        foto: contatoAtualizado.imagem,
+        perfilId: contatoAtualizado.id
+      };
+      
+      salvarConversaLocal(userId, contatoAtivo.id, dadosConversa);
     }
     
     // Simular resposta automática após 1-3 segundos
     setTimeout(() => {
-      // Resposta automática a partir do mockData
-      const resposta = mockData.getRespostaAutomatica();
+      // Resposta automática a partir do mockData, passando o ID do contato
+      const resposta = mockData.getRespostaAutomatica(contatoAtivo.id);
       
       const respostaMensagem = {
         id: contatoAtualizado.mensagens.length + 1,
@@ -475,58 +694,44 @@ export default function Contatos() {
         setContatoAtivo(contatoComResposta);
       }
       
-      // Salvar conversa atualizada no localStorage
+      // Salvar conversa atualizada no localStorage usando a nova função
       if (userId) {
-        salvarConversa(
-          userId, 
-          contatoAtivo.id, 
-          contatoComResposta.mensagens, 
-          contatoComResposta.ultimaMensagem, 
-          contatoComResposta.horaUltimaMensagem
-        );
+        // Estrutura completa para salvar
+        const dadosConversaAtualizada = {
+          mensagens: contatoComResposta.mensagens,
+          ultimaMensagem: contatoComResposta.ultimaMensagem,
+          horaUltimaMensagem: contatoComResposta.horaUltimaMensagem,
+          nome: contatoComResposta.nome,
+          foto: contatoComResposta.imagem,
+          perfilId: contatoComResposta.id
+        };
+        
+        salvarConversaLocal(userId, contatoAtivo.id, dadosConversaAtualizada);
       }
     }, Math.random() * 2000 + 1000); // Entre 1 e 3 segundos
   };
 
   // Função para renderizar os contatos
   const renderContatos = () => {
-    if (contatosLista.length === 0) {
+    if (semMatches || contatosLista.length === 0) {
       return (
         <div className="sem-contatos" style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          height: '100%',
-          padding: '20px',
+          height: '50vh',
           textAlign: 'center',
-          color: '#666'
+          padding: '20px'
         }}>
-          <img 
-            src="/images/empty-chat.svg" 
-            alt="Sem contatos" 
-            style={{ width: '80px', marginBottom: '20px', opacity: 0.5 }}
-          />
-          <h3 style={{ margin: '0 0 10px', color: '#8319C1' }}>Sem matches ainda</h3>
-          <p>
-            Volte para a timeline e dê likes em mais perfis para conseguir matches!
-          </p>
-          <button
-            onClick={() => redirectWithUtm('/curtidas')}
-            style={{
-              backgroundColor: '#8319C1',
-              color: 'white',
-              border: 'none',
-              borderRadius: '20px',
-              padding: '10px 20px',
-              marginTop: '20px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            Ir para Timeline
-          </button>
-        </div>
+
+            <h3 style={{ color: 'white', marginBottom: '10px', backgroundColor: 'black',}}>
+              Você ainda não tem matches
+            </h3>
+            <p style={{ color: 'white', fontSize: '14px', backgroundColor: 'black',}}>
+              Dê likes em perfis para conseguir matches e iniciar conversas
+            </p>
+          </div>
       );
     }
     

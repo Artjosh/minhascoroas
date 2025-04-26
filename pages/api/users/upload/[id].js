@@ -56,7 +56,7 @@ handler.post(async (req, res) => {
     // Buscar usuário para verificar se existe
     const { data: usuario, error: userError } = await supabaseAdmin
       .from('usuarios')
-      .select('email')
+      .select('email, fotos')
       .eq('id', id)
       .single();
       
@@ -74,7 +74,7 @@ handler.post(async (req, res) => {
     
     // Fazer upload para o Supabase Storage
     const { data, error } = await supabaseAdmin.storage
-      .from('fotos')
+      .from('perfil-fotos')
       .upload(fileName, file.buffer, {
         contentType: file.mimetype,
         upsert: true
@@ -87,12 +87,26 @@ handler.post(async (req, res) => {
     
     // Gerar URL pública
     const { data: urlData } = supabaseAdmin.storage
-      .from('fotos')
+      .from('perfil-fotos')
       .getPublicUrl(fileName);
+    
+    // Atualizar o campo fotos do usuário no banco de dados
+    let fotosAtualizadas = usuario.fotos || [];
+    fotosAtualizadas = [...fotosAtualizadas, urlData.publicUrl];
+    
+    const { error: updateError } = await supabaseAdmin
+      .from('usuarios')
+      .update({ fotos: fotosAtualizadas })
+      .eq('id', id);
+    
+    if (updateError) {
+      console.error('Erro ao atualizar fotos do usuário:', updateError);
+    }
       
     return res.status(200).json({ 
       success: true, 
-      url: urlData.publicUrl 
+      url: urlData.publicUrl,
+      updateLocalStorage: true
     });
     
   } catch (error) {

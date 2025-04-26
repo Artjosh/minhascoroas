@@ -66,6 +66,10 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Erro ao atualizar matches' });
     }
     
+    // Armazenar a lista atualizada de matches no localStorage do cliente
+    // Isso é feito através de um cookie ou resposta que o front-end irá processar
+    const matchesKey = `matches_${userId}`;
+    
     // Preparar informações do match para retornar (para uso em notificações e UI)
     const matchInfo = matchData ? {
       id: matchId,
@@ -78,7 +82,12 @@ export default async function handler(req, res) {
       matches: newMatches,
       matchInfo: matchInfo,
       isNewMatch: true,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      // Adicionar informação para atualizar o localStorage no cliente
+      localStorageUpdate: {
+        key: matchesKey,
+        value: newMatches
+      }
     });
     
   } catch (error) {

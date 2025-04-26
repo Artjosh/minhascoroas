@@ -4,12 +4,14 @@
  */
 
 /**
- * Sistema de fluxo de conversas predefinidas
- * Cada perfil tem seu próprio fluxo de 10 etapas de mensagens
- * A segunda etapa sempre contém 2 áudios
+ * Sistema de fluxo de conversas dinâmicas
+ * Cada perfil de mulher tem seus próprios dados de mensagem
+ * - contatosBase: fornece a primeira etapa 
+ * - audios: fornece a segunda etapa (sempre 2 áudios)
+ * - respostasAutomaticas: constituem as próximas etapas (randomizadas)
  */
 
-import { perfis } from './mock';
+import { mulheres } from './mock';
 
 // Função auxiliar para gerar ID único
 const generateId = () => Math.floor(Math.random() * 100000);
@@ -38,296 +40,323 @@ const criarEtapaTexto = (texto) => ({
 // Função para criar etapa de áudio
 const criarEtapaAudio = (audio1, audio2) => ({
   mensagens: [
-    criarMensagemAudio("0:45", audio1),
-    criarMensagemAudio("1:20", audio2)
+    criarMensagemAudio("0:15", audio1),
+    criarMensagemAudio("0:45", audio2)
   ]
 });
 
-// Fluxos de conversa para cada perfil
-export const fluxosConversa = {
-  // Carolina (ID 1) - Cinema e Viagens
-  "1": {
-    etapas: [
-      criarEtapaTexto("Oi! Que legal que demos match! Adoro conhecer pessoas novas 😊"),
-      criarEtapaAudio(
-        "Oi, queria me apresentar melhor... Sou a Carol, tenho 32 anos e sou apaixonada por cinema!",
-        "Adoro filmes de todos os gêneros, mas tenho uma queda especial por suspense e ficção científica..."
-      ),
-      criarEtapaTexto("Vi que você também gosta de cinema! Qual seu gênero favorito?"),
-      criarEtapaTexto("Eu adoro filmes de suspense e sci-fi! Já viu Interestelar?"),
-      criarEtapaTexto("Que tal irmos ao cinema qualquer dia desses? 🎬"),
-      criarEtapaTexto("Tem um filme muito legal em cartaz que acho que você vai gostar!"),
-      criarEtapaTexto("E depois podemos tomar um café e conversar mais sobre filmes 😊"),
-      criarEtapaTexto("O que você acha? Podemos marcar para esse fim de semana?"),
-      criarEtapaTexto("Tenho certeza que vamos nos dar super bem!"),
-      criarEtapaTexto("Me avisa qual dia fica melhor para você 😉")
-    ]
-  },
-
-  // Patrícia (ID 2) - Advocacia e Viagens
-  "2": {
-    etapas: [
-      criarEtapaTexto("Oi! Que bom que demos match! Adorei seu perfil 💜"),
-      criarEtapaAudio(
-        "Oi, tudo bem? Sou a Patrícia, advogada, trabalho com direito empresarial...",
-        "Além da advocacia, sou apaixonada por viagens e conhecer lugares novos..."
-      ),
-      criarEtapaTexto("Vi que você também gosta de viajar! Qual foi seu último destino?"),
-      criarEtapaTexto("Minha última viagem foi para Portugal, me apaixonei por Lisboa!"),
-      criarEtapaTexto("Você já conhece Portugal? Se não, precisa conhecer!"),
-      criarEtapaTexto("Os portugueses são muito receptivos e a comida é maravilhosa"),
-      criarEtapaTexto("Podemos trocar dicas de viagem tomando um vinho, o que acha?"),
-      criarEtapaTexto("Conheço um wine bar ótimo aqui no centro"),
-      criarEtapaTexto("Seria legal te conhecer melhor e planejar futuras viagens 😊"),
-      criarEtapaTexto("Me fala se você topa e qual dia seria melhor!")
-    ]
-  },
-
-  // Amanda (ID 3) - Empresária e Música
-  "3": {
-    etapas: [
-      criarEtapaTexto("Oi! Match perfeito! Que bom te conhecer 🎵"),
-      criarEtapaAudio(
-        "Oi! Sou a Amanda, empresária do ramo de eventos e apaixonada por música...",
-        "Toco piano desde criança e adoro todos os tipos de música, especialmente jazz..."
-      ),
-      criarEtapaTexto("Vi que você também curte música! Qual seu estilo favorito?"),
-      criarEtapaTexto("Tem um jazz bar incrível aqui perto que você precisa conhecer!"),
-      criarEtapaTexto("Eles têm apresentações ao vivo toda sexta-feira"),
-      criarEtapaTexto("A atmosfera é perfeita para um primeiro encontro 🎷"),
-      criarEtapaTexto("Além da música excelente, o drink menu é sensacional"),
-      criarEtapaTexto("O que acha de irmos nessa sexta?"),
-      criarEtapaTexto("Podemos jantar e depois curtir um jazz ao vivo"),
-      criarEtapaTexto("Me avisa se você topa e podemos combinar os detalhes! 😊")
-    ]
-  },
-
-  // Juliana (ID 4) - Médica e Praia
-  "4": {
-    etapas: [
-      criarEtapaTexto("Oi! Que match incrível! Adorei seu perfil 🌊"),
-      criarEtapaAudio(
-        "Oi! Me chamo Juliana, sou médica cardiologista e amo a vida praiana...",
-        "Nos fins de semana sempre tento escapar para a praia, é minha terapia..."
-      ),
-      criarEtapaTexto("Você também curte praia? Qual sua preferida?"),
-      criarEtapaTexto("Conheço um quiosque maravilhoso à beira-mar"),
-      criarEtapaTexto("Eles servem os melhores drinks e petiscos da orla"),
-      criarEtapaTexto("Que tal um encontro com pé na areia? 🏖️"),
-      criarEtapaTexto("Podemos aproveitar o pôr do sol"),
-      criarEtapaTexto("O lugar é perfeito para uma boa conversa"),
-      criarEtapaTexto("Esse fim de semana promete sol, vai ser perfeito!"),
-      criarEtapaTexto("O que me diz? Vamos aproveitar? 😊")
-    ]
-  },
-
-  // Fernanda (ID 5) - Advogada e Teatro
-  "5": {
-    etapas: [
-      criarEtapaTexto("Oi! Que match especial! Adorei nosso match 🎭"),
-      criarEtapaAudio(
-        "Olá! Sou Fernanda, advogada e apaixonada por teatro e artes em geral...",
-        "Sempre que posso estou assistindo uma peça nova ou visitando exposições..."
-      ),
-      criarEtapaTexto("Vi que você também aprecia arte! Já foi ao teatro municipal?"),
-      criarEtapaTexto("Tem uma peça incrível em cartaz agora"),
-      criarEtapaTexto("É uma adaptação moderna de um clássico"),
-      criarEtapaTexto("Que tal irmos assistir juntos?"),
-      criarEtapaTexto("Depois podemos jantar e discutir a peça"),
-      criarEtapaTexto("Conheço um restaurante charmoso próximo ao teatro"),
-      criarEtapaTexto("Seria um programa perfeito!"),
-      criarEtapaTexto("Me diz se você se interessa e podemos combinar! 🎨")
-    ]
-  },
-
-  // Beatriz (ID 6) - Empreendedora e Esportes
-  "6": {
-    etapas: [
-      criarEtapaTexto("Oi! Super match! Que bom te conhecer 🏃‍♀️"),
-      criarEtapaAudio(
-        "Oi! Sou a Beatriz, empreendedora e super ativa, amo esportes e aventuras...",
-        "Pratico corrida, ciclismo e adoro atividades ao ar livre..."
-      ),
-      criarEtapaTexto("Você também curte esportes? Qual sua atividade favorita?"),
-      criarEtapaTexto("Tem um parque incrível aqui perto com várias trilhas"),
-      criarEtapaTexto("Que tal uma caminhada seguida de um café da manhã saudável?"),
-      criarEtapaTexto("Conheço um café super charmoso com opções fitness"),
-      criarEtapaTexto("Seria um programa diferente e saudável"),
-      criarEtapaTexto("Podemos nos exercitar e conversar ao mesmo tempo"),
-      criarEtapaTexto("O que acha de domingo de manhã?"),
-      criarEtapaTexto("Me avisa se você topa essa aventura! 🌿")
-    ]
-  },
-
-  // Luciana (ID 7) - Professora e Arte
-  "7": {
-    etapas: [
-      criarEtapaTexto("Oi! Que match cultural! Adorei seu perfil 🎨"),
-      criarEtapaAudio(
-        "Olá! Sou Luciana, professora de história da arte e curadora...",
-        "Adoro compartilhar conhecimento sobre arte e cultura..."
-      ),
-      criarEtapaTexto("Você se interessa por arte? Qual seu período favorito?"),
-      criarEtapaTexto("Tem uma exposição incrível acontecendo no museu"),
-      criarEtapaTexto("São obras contemporâneas muito interessantes"),
-      criarEtapaTexto("Posso te fazer uma visita guiada especial 😊"),
-      criarEtapaTexto("Depois podemos tomar um café na cafeteria do museu"),
-      criarEtapaTexto("Eles têm uma vista linda da cidade"),
-      criarEtapaTexto("Seria um programa muito especial"),
-      criarEtapaTexto("O que acha? Vamos marcar? 🏛️")
-    ]
-  },
-
-  // Camila (ID 8) - Arquiteta e Design
-  "8": {
-    etapas: [
-      criarEtapaTexto("Oi! Match criativo! Que legal te conhecer 🎨"),
-      criarEtapaAudio(
-        "Oi! Sou Camila, arquiteta e apaixonada por design e fotografia...",
-        "Adoro explorar a cidade fotografando prédios históricos e arte urbana..."
-      ),
-      criarEtapaTexto("Você também gosta de fotografia? Qual seu tema preferido?"),
-      criarEtapaTexto("Conheço um roteiro incrível pelo centro histórico"),
-      criarEtapaTexto("Tem muita arquitetura interessante e street art"),
-      criarEtapaTexto("Podemos fazer um tour fotográfico juntos"),
-      criarEtapaTexto("E depois tomar um café em um lugar super instagramável"),
-      criarEtapaTexto("O que acha dessa ideia diferente?"),
-      criarEtapaTexto("Seria um encontro super criativo!"),
-      criarEtapaTexto("Me diz se você topa essa aventura fotográfica! 📸")
-    ]
-  },
-
-  // Eduarda (ID 9) - Jornalista e Dança
-  "9": {
-    etapas: [
-      criarEtapaTexto("Oi! Match musical! Que bom te conhecer 💃"),
-      criarEtapaAudio(
-        "Oi! Sou Eduarda, jornalista e apaixonada por dança e música...",
-        "Faço aulas de dança de salão e adoro descobrir novos ritmos..."
-      ),
-      criarEtapaTexto("Você gosta de dançar? Qual seu ritmo favorito?"),
-      criarEtapaTexto("Tem uma casa de shows incrível que toca música ao vivo"),
-      criarEtapaTexto("O ambiente é super agradável e animado"),
-      criarEtapaTexto("Que tal irmos dançar um pouco?"),
-      criarEtapaTexto("Não precisa ser expert, podemos nos divertir!"),
-      criarEtapaTexto("Eles também servem uns petiscos deliciosos"),
-      criarEtapaTexto("Seria uma noite super animada!"),
-      criarEtapaTexto("Me diz se você topa e quando podemos ir! 🎵")
-    ]
-  },
-
-  // Gabriela (ID 10) - Psicóloga e Yoga
-  "10": {
-    etapas: [
-      criarEtapaTexto("Oi! Match zen! Que bom te conhecer 🧘‍♀️"),
-      criarEtapaAudio(
-        "Olá! Sou Gabriela, psicóloga e instrutora de yoga...",
-        "Busco sempre equilibrar corpo e mente através de práticas mindfulness..."
-      ),
-      criarEtapaTexto("Você já praticou yoga ou meditação alguma vez?"),
-      criarEtapaTexto("Conheço um espaço holístico maravilhoso"),
-      criarEtapaTexto("Eles têm aulas para iniciantes e um café orgânico"),
-      criarEtapaTexto("Que tal uma aula experimental comigo?"),
-      criarEtapaTexto("Depois podemos tomar um chá e conversar"),
-      criarEtapaTexto("É uma forma diferente de se conhecer"),
-      criarEtapaTexto("Seria uma experiência única!"),
-      criarEtapaTexto("Me diz se você topa essa experiência zen! 🍵")
-    ]
-  },
-
-  // Renata (ID 11) - Empresária e Eventos
-  "11": {
-    etapas: [
-      criarEtapaTexto("Oi! Match social! Adorei seu perfil 🎉"),
-      criarEtapaAudio(
-        "Oi! Sou Renata, empresária do ramo de eventos corporativos...",
-        "Adoro networking e conhecer pessoas interessantes..."
-      ),
-      criarEtapaTexto("Você costuma ir a eventos de networking?"),
-      criarEtapaTexto("Tem um evento super interessante essa semana"),
-      criarEtapaTexto("É um coquetel com empresários e profissionais"),
-      criarEtapaTexto("Seria ótimo te ter como meu +1"),
-      criarEtapaTexto("O networking é incrível e a comida é maravilhosa"),
-      criarEtapaTexto("Depois podemos continuar conversando em um lugar mais tranquilo"),
-      criarEtapaTexto("Que tal essa proposta diferente?"),
-      criarEtapaTexto("Me avisa se você topa e te passo mais detalhes! 🥂")
-    ]
-  },
-
-  // Mariana (ID 12) - Nutricionista e Culinária
-  "12": {
-    etapas: [
-      criarEtapaTexto("Oi! Match saudável! Que bom te conhecer 🥗"),
-      criarEtapaAudio(
-        "Oi! Sou Mariana, nutricionista e apaixonada por gastronomia saudável...",
-        "Adoro criar receitas nutritivas e deliciosas..."
-      ),
-      criarEtapaTexto("Você se interessa por alimentação saudável?"),
-      criarEtapaTexto("Conheço um restaurante farm-to-table incrível"),
-      criarEtapaTexto("Eles usam ingredientes orgânicos e locais"),
-      criarEtapaTexto("Que tal experimentarmos juntos?"),
-      criarEtapaTexto("Posso te dar várias dicas nutricionais durante o jantar"),
-      criarEtapaTexto("O ambiente é super aconchegante"),
-      criarEtapaTexto("Seria um encontro delicioso e saudável!"),
-      criarEtapaTexto("Me diz se você topa essa experiência gastronômica! 🥑")
-    ]
-  },
-
-  // Vanessa (ID 13) - Designer e Moda
-  "13": {
-    etapas: [
-      criarEtapaTexto("Oi! Match fashion! Adorei seu estilo 👗"),
-      criarEtapaAudio(
-        "Oi! Sou Vanessa, designer de moda e apaixonada por arte...",
-        "Trabalho com moda sustentável e design de acessórios..."
-      ),
-      criarEtapaTexto("Você se interessa por moda e design?"),
-      criarEtapaTexto("Tem uma exposição de moda sustentável incrível"),
-      criarEtapaTexto("São peças únicas de designers independentes"),
-      criarEtapaTexto("Poderia te mostrar e explicar sobre as tendências"),
-      criarEtapaTexto("Depois tem um café conceitual próximo"),
-      criarEtapaTexto("O ambiente é super instagramável"),
-      criarEtapaTexto("Seria um encontro cheio de estilo!"),
-      criarEtapaTexto("Me diz se você topa esse programa fashion! ✨")
-    ]
+// Função para obter mensagem inicial do perfil (etapa 1)
+const obterMensagemInicial = (perfilId) => {
+  
+  
+  // Garantir que o ID é um número
+  const perfilIdNumerico = parseInt(perfilId, 10);
+  
+  
+  if (isNaN(perfilIdNumerico)) {
+    
+    return null;
   }
+  
+  const perfil = mulheres.find(m => m.id === perfilIdNumerico);
+  
+  
+  if (!perfil || !perfil.contatosBase || !perfil.contatosBase.length) {
+    
+    return null;
+  }
+  
+  // Obter a primeira mensagem do contato base (não enviada pelo usuário)
+  const mensagensIniciais = perfil.contatosBase[0].mensagens;
+  
+  
+  if (!mensagensIniciais || mensagensIniciais.length === 0) {
+    
+    return null;
+  }
+  
+  const primeirasMensagens = mensagensIniciais.filter(m => !m.enviada);
+  
+  
+  if (primeirasMensagens.length > 0) {
+    // Verificar se há texto na primeira mensagem
+    if (!primeirasMensagens[0].texto) {
+      
+      return criarEtapaTexto("Olá! Que bom conhecer você!");
+    }
+    
+    const etapa = criarEtapaTexto(primeirasMensagens[0].texto);
+    
+    return etapa;
+  }
+  
+  
+  return null;
+};
+
+// Função para obter áudios do perfil (etapa 2)
+const obterAudios = (perfilId) => {
+  
+  // Garantir que o ID é um número
+  const perfilIdNumerico = parseInt(perfilId, 10);
+  
+  if (isNaN(perfilIdNumerico)) {
+    console.warn(`[obterAudios] ID de perfil inválido: ${perfilId}`);
+    // Retornar uma mensagem de texto como fallback
+    return criarEtapaTexto("Oi! Que bom receber sua mensagem. Como está seu dia?");
+  }
+  
+  const perfil = mulheres.find(m => m.id === perfilIdNumerico);
+  
+  if (!perfil) {
+    console.warn(`[obterAudios] Perfil não encontrado para ID: ${perfilId}`);
+    // Retornar uma mensagem de texto como fallback
+    return criarEtapaTexto("Olá! Adorei receber sua mensagem. Me conte mais sobre você!");
+  }
+  
+  // Verificar se o perfil tem áudios definidos
+  if (!perfil.audios || perfil.audios.length === 0) {
+    console.warn(`[obterAudios] Perfil ID ${perfilId} não tem áudios definidos`);
+    // Retornar uma mensagem de texto como fallback
+    return criarEtapaTexto("Oi! Adorei receber sua mensagem. Vamos conversar mais?");
+  }
+  
+  // Obter dois áudios para a segunda etapa
+  const audioSaudacao = perfil.audios.find(a => a.tipo === "saudacao");
+  const audiosDisponiveis = perfil.audios.filter(a => a.tipo !== "saudacao"); // Evitar áudio de saudação
+  
+  // Garantir textos padrão caso não haja texto definido nos áudios
+  const textoAudioPadrao = "Mensagem de áudio";
+  
+  let audio1 = textoAudioPadrao;
+  let audio2 = textoAudioPadrao;
+  
+  // Definir o primeiro áudio (preferência para áudio de saudação)
+  if (audioSaudacao && audioSaudacao.texto) {
+    audio1 = audioSaudacao.texto;
+  } else if (perfil.audios.length > 0 && perfil.audios[0].texto) {
+    audio1 = perfil.audios[0].texto;
+  }
+  
+  // Definir o segundo áudio (usar o primeiro disponível que não seja de saudação)
+  if (audiosDisponiveis.length > 0 && audiosDisponiveis[0].texto) {
+    audio2 = audiosDisponiveis[0].texto;
+  } else if (perfil.audios.length > 1 && perfil.audios[1].texto) {
+    audio2 = perfil.audios[1].texto;
+  }
+  
+  // Se não temos dois áudios diferentes, usar o mesmo texto para ambos
+  if (audio1 === audio2 && perfil.audios.length === 1) {
+    audio2 = "Adorei receber sua mensagem. Me conta mais sobre você!";
+  }
+  
+  const etapa = criarEtapaAudio(audio1, audio2);
+  
+  return etapa;
+};
+
+// Função para obter respostas automáticas (etapas 3+)
+const obterRespostasAutomaticas = (perfilId) => {
+  
+  
+  // Garantir que o ID é um número
+  const perfilIdNumerico = parseInt(perfilId, 10);
+  
+  
+  if (isNaN(perfilIdNumerico)) {
+    
+    return [];
+  }
+  
+  const perfil = mulheres.find(m => m.id === perfilIdNumerico);
+  
+  
+  if (!perfil || !perfil.respostasAutomaticas || !perfil.respostasAutomaticas.length) {
+    
+    return [];
+  }
+  
+  // Criar uma etapa de texto para cada resposta automática
+  const etapas = perfil.respostasAutomaticas.map(resposta => {
+    if (!resposta) {
+      
+      return criarEtapaTexto("Estou gostando da nossa conversa!");
+    }
+    return criarEtapaTexto(resposta);
+  });
+  
+  
+  return etapas;
+};
+
+// Construção dinâmica dos fluxos de conversa
+export const fluxosConversa = {};
+
+// Gerar fluxos de conversa para cada perfil de mulher
+mulheres.forEach(mulher => {
+  const perfilId = String(mulher.id);
+  
+  
+  // Criar array de etapas para este perfil
+  const etapas = [];
+  
+  // Etapa 1: Mensagem inicial do contatosBase
+  const etapa1 = obterMensagemInicial(mulher.id);
+  if (etapa1) {
+    
+    etapas.push(etapa1);
+  }
+  
+  // Etapa 2: Áudios
+  const etapa2 = obterAudios(mulher.id);
+  if (etapa2) {
+    
+    etapas.push(etapa2);
+  }
+  
+  // Etapas 3+: Respostas automáticas
+  const etapasAdicionais = obterRespostasAutomaticas(mulher.id);
+  
+  etapas.push(...etapasAdicionais);
+  
+  // Armazenar fluxo completo para este perfil
+  fluxosConversa[perfilId] = { etapas };
+  
+});
+
+// Função para obter uma resposta automática aleatória para uso nas próximas etapas
+export const getRespostaAutomaticaRandom = (perfilId) => {
+  
+  
+  // Garantir que perfilId seja um valor válido
+  if (!perfilId) {
+    
+    return "Que interessante! Me conta mais sobre você.";
+  }
+  
+  // Converter para número se for string
+  const perfilIdNumerico = parseInt(perfilId, 10);
+  
+  
+  if (isNaN(perfilIdNumerico)) {
+    
+    return "Estou adorando nossa conversa! Me conte mais.";
+  }
+  
+  const perfil = mulheres.find(m => m.id === perfilIdNumerico);
+  
+  
+  if (!perfil || !perfil.respostasAutomaticas || !perfil.respostasAutomaticas.length) {
+    
+    return "Isso é muito interessante! O que mais você gosta de fazer?";
+  }
+  
+  const indice = Math.floor(Math.random() * perfil.respostasAutomaticas.length);
+  
+  const resposta = perfil.respostasAutomaticas[indice];
+  
+  return resposta;
 };
 
 // Função para obter a próxima etapa de uma conversa
 export const obterProximaEtapa = (perfilId, etapaAtual) => {
-  const perfil = fluxosConversa[perfilId];
-  if (!perfil || etapaAtual >= perfil.etapas.length) return null;
-  return perfil.etapas[etapaAtual];
+  // Garantir que etapaAtual é um número
+  const etapaAtualNum = parseInt(etapaAtual, 10);
+  console.log(`[obterProximaEtapa] ID: ${perfilId}, Etapa: ${etapaAtualNum}`);
+  
+  // Garantir que perfilId seja um valor válido
+  if (!perfilId) {
+    console.log('[obterProximaEtapa] perfilId inválido, retornando resposta padrão');
+    return criarEtapaTexto("Que legal! Me conte mais sobre você.");
+  }
+  
+  // Garantir que perfilId seja uma string
+  const perfilIdString = String(perfilId);
+  
+  // Se estamos na etapa 0, devemos fornecer a etapa 1 (primeira mensagem)
+  if (etapaAtualNum === 0) {
+    console.log('[obterProximaEtapa] Etapa 0 → Etapa 1 (primeira mensagem)');
+    // Obter a primeira etapa (mensagem de texto)
+    const primeiraMensagem = criarEtapaTexto("Olá! Que bom conhecer você. Como está seu dia?");
+    return primeiraMensagem;
+  }
+  
+  // Se estamos na etapa 1, a próxima deve ser a etapa 2 (áudios)
+  if (etapaAtualNum === 1) {
+    console.log('[obterProximaEtapa] Etapa 1 → Etapa 2 (áudios)');
+    const etapaAudios = obterAudios(perfilId);
+    if (etapaAudios) {
+      return etapaAudios;
+    }
+  }
+  
+  // Buscar no fluxo de conversa
+  const perfil = fluxosConversa[perfilIdString];
+  
+  // Se não encontrar o perfil ou se já passamos de todas as etapas, retornar uma resposta aleatória
+  if (!perfil || etapaAtualNum >= perfil.etapas.length) {
+    console.log('[obterProximaEtapa] Etapa além do fluxo ou perfil não encontrado, usando resposta aleatória');
+    const respostaRandom = getRespostaAutomaticaRandom(perfilId);
+    const etapa = criarEtapaTexto(respostaRandom);
+    return etapa;
+  }
+  
+  console.log(`[obterProximaEtapa] Retornando etapa ${etapaAtualNum} do fluxo`);
+  return perfil.etapas[etapaAtualNum];
 };
 
 // Função para verificar se uma mensagem é de áudio
-export const isAudioMessage = (mensagem) => mensagem.tipo === "audio";
+export const isAudioMessage = (mensagem) => {
+  
+  return mensagem?.tipo === "audio";
+};
 
 // Função para obter o estado inicial de uma conversa
-export const getEstadoInicialConversa = (perfilId) => ({
-  etapaAtual: 0,
-  mensagens: [],
-  perfilId,
-  ultimaAtualizacao: Date.now()
-});
+export const getEstadoInicialConversa = (perfilId) => {
+  console.log(`[getEstadoInicialConversa] Criando estado inicial para perfilId: ${perfilId}`);
+  return {
+    etapaAtual: 1, // Começar na etapa 1, não na etapa 0
+    mensagens: [],
+    perfilId,
+    ultimaAtualizacao: Date.now()
+  };
+};
 
 // Funções de localStorage
 export const salvarConversaLocal = (userId, matchId, conversa) => {
   try {
+    // Garantir que a etapaAtual está sendo preservada e nunca é 0
+    if (conversa) {
+      if (!conversa.hasOwnProperty('etapaAtual') || conversa.etapaAtual < 1) {
+        conversa.etapaAtual = 1; // Valor mínimo garantido
+      }
+    }
+    
     const key = `chat_${userId}_${matchId}`;
     localStorage.setItem(key, JSON.stringify(conversa));
   } catch (error) {
-    console.error('Erro ao salvar conversa:', error);
+    console.error('[salvarConversaLocal] Erro ao salvar conversa:', error);
   }
 };
 
 export const obterConversaLocal = (userId, matchId) => {
   try {
+    
     const key = `chat_${userId}_${matchId}`;
     const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : null;
+    let conversa = data ? JSON.parse(data) : null;
+    
+    // Corrigir a conversa se ela existir mas tiver etapa 0
+    if (conversa && (!conversa.etapaAtual || conversa.etapaAtual < 1)) {
+      conversa.etapaAtual = 1;
+      // Salvar a conversa corrigida
+      salvarConversaLocal(userId, matchId, conversa);
+      console.log('[obterConversaLocal] Conversa corrigida para etapa mínima 1');
+    }
+    
+    return conversa;
   } catch (error) {
-    console.error('Erro ao recuperar conversa:', error);
+    console.error('[obterConversaLocal] Erro ao recuperar conversa:', error);
     return null;
   }
 };
@@ -356,5 +385,6 @@ export default {
   getEstadoInicialConversa,
   salvarConversaLocal,
   obterConversaLocal,
-  obterTodasConversasLocal
+  obterTodasConversasLocal,
+  getRespostaAutomaticaRandom
 }; 

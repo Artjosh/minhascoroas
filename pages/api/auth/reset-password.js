@@ -84,7 +84,7 @@ router.post(async (req, res) => {
 
     // Aqui seria o código para enviar o email com o link de redefinição
     // Como ainda não temos o serviço de email configurado, apenas logamos o link
-    console.log(`Link de redefinição para ${email}: ${resetLink}`);
+    
     
     // Se tivesse integração com serviço de email:
     // await sendEmail(email, 'Redefinição de Senha - Minha Coroa', 

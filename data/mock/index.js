@@ -206,7 +206,7 @@ export const mulheres = [
         foto: "/images/4.jpg"
       }
     ],
-    contatosBase: [ // Preenchido
+    contatosBase: [
        {
         id: 4,
         nome: "Juliana",
@@ -262,7 +262,7 @@ export const mulheres = [
         foto: "/images/5.jpg"
       }
     ],
-    contatosBase: [ // Preenchido
+    contatosBase: [
       {
         id: 5,
         nome: "Fernanda",
@@ -320,7 +320,7 @@ export const mulheres = [
         foto: "/images/6.png"
       }
     ],
-    contatosBase: [ // Preenchido
+    contatosBase: [
        {
         id: 6,
         nome: "Beatriz",
@@ -377,7 +377,7 @@ export const mulheres = [
         foto: "/images/7.jpg"
       }
     ],
-    contatosBase: [ // Preenchido
+    contatosBase: [
       {
         id: 7,
         nome: "Luciana",
@@ -393,7 +393,7 @@ export const mulheres = [
         ]
       }
     ],
-    dadosCurtida: [ // Preenchido
+    dadosCurtida: [
       {
         id: 7,
         nome: "Luciana, 39",
@@ -434,7 +434,7 @@ export const mulheres = [
         foto: "/images/8.jpg"
       }
     ],
-    contatosBase: [ // Preenchido
+    contatosBase: [
        {
         id: 8,
         nome: "Camila",
@@ -450,7 +450,7 @@ export const mulheres = [
         ]
       }
     ],
-    dadosCurtida: [ // Preenchido
+    dadosCurtida: [
       {
         id: 8,
         nome: "Camila, 34",
@@ -491,7 +491,7 @@ export const mulheres = [
         foto: "/images/9.jpg"
       }
     ],
-    contatosBase: [ // Preenchido
+    contatosBase: [
       {
         id: 9,
         nome: "Eduarda",
@@ -508,7 +508,7 @@ export const mulheres = [
         ]
       }
     ],
-    dadosCurtida: [ // Preenchido
+    dadosCurtida: [
       {
         id: 9,
         nome: "Eduarda, 30",
@@ -549,7 +549,7 @@ export const mulheres = [
         foto: "/images/10.png"
       }
     ],
-    contatosBase: [ // Preenchido
+    contatosBase: [
        {
         id: 10,
         nome: "Gabriela",
@@ -564,7 +564,7 @@ export const mulheres = [
         ]
       }
     ],
-    dadosCurtida: [ // Preenchido
+    dadosCurtida: [
       {
         id: 10,
         nome: "Gabriela, 38",
@@ -605,7 +605,7 @@ export const mulheres = [
         foto: "/images/011.jpg"
       }
     ],
-    contatosBase: [ // Preenchido
+    contatosBase: [
       {
         id: 11,
         nome: "Renata",
@@ -621,7 +621,7 @@ export const mulheres = [
         ]
       }
     ],
-    dadosCurtida: [ // Preenchido
+    dadosCurtida: [
       {
         id: 11,
         nome: "Renata, 36",
@@ -662,7 +662,7 @@ export const mulheres = [
         foto: "/images/12.jpg"
       }
     ],
-    contatosBase: [ // Preenchido
+    contatosBase: [
        {
         id: 12,
         nome: "Mariana",
@@ -678,7 +678,7 @@ export const mulheres = [
         ]
       }
     ],
-    dadosCurtida: [ // Preenchido
+    dadosCurtida: [
       {
         id: 12,
         nome: "Mariana, 31",
@@ -719,7 +719,7 @@ export const mulheres = [
         foto: "/images/13.jpg"
       }
     ],
-    contatosBase: [ // Preenchido
+    contatosBase: [
       {
         id: 13,
         nome: "Vanessa",
@@ -735,7 +735,7 @@ export const mulheres = [
         ]
       }
     ],
-    dadosCurtida: [ // Preenchido
+    dadosCurtida: [
       {
         id: 13,
         nome: "Vanessa, 33",
@@ -749,34 +749,51 @@ export const mulheres = [
 
 // Função para obter uma mensagem inicial aleatória
 export function getMensagemInicial(mulherId) {
+  
   const mulher = mulheres.find(m => m.id === parseInt(mulherId));
+  
+  
   if (mulher && mulher.contatosBase && mulher.contatosBase.length > 0) {
-    return mulher.contatosBase[0].mensagens[0].texto;
+    const mensagemInicial = mulher.contatosBase[0].mensagens[0].texto;
+    
+    return mensagemInicial;
   }
+  
+  
   return null;
 }
 
 // Função para obter uma resposta automática aleatória
 export function getRespostaAutomatica(mulherId) {
+  
   const mulher = mulheres.find(m => m.id === parseInt(mulherId));
-  if (mulher) {
+  
+  
+  if (mulher && mulher.respostasAutomaticas && mulher.respostasAutomaticas.length > 0) {
     const indice = Math.floor(Math.random() * mulher.respostasAutomaticas.length);
-    return mulher.respostasAutomaticas[indice];
+    
+    const resposta = mulher.respostasAutomaticas[indice];
+    
+    return resposta;
   }
-  return null;
+  
+  
+  return "Estou gostando muito de conversar com você!";
 }
 
 // Função para encontrar perfil por ID - útil para o sistema de matches
 export function encontrarPerfilPorId(id) {
+  
   const mulher = mulheres.find(m => m.id === parseInt(id));
+  
   return mulher || null;
 }
 
 
 export default { 
   mulheres, 
-    getMensagemInicial,
-    getRespostaAutomatica,
-    encontrarPerfilPorId
+  getMensagemInicial,
+  getRespostaAutomatica,
+  encontrarPerfilPorId
 };
 

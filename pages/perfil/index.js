@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useUtmParams } from '../../components/UtmManager';
 import BottomNavigation from '../../components/BottomNavigation';
 import { isUserLoggedIn, getUserData, getAuthHeaders } from '../../lib/auth';
+import { useRouter } from 'next/router';
 
 export default function Perfil() {
   const { redirectWithUtm } = useUtmParams();
@@ -17,6 +18,7 @@ export default function Perfil() {
   const [salvando, setSalvando] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const fileInputRef = useRef(null);
+  const router = useRouter();
   
   // Lista de interesses disponíveis
   const interessesDisponiveis = [
@@ -27,42 +29,42 @@ export default function Perfil() {
   
   // Carregar dados do usuário
   useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        // Verificar se o usuário está logado
-        if (!isUserLoggedIn()) {
-          redirectWithUtm('/login');
-          return;
-        }
-        
-        // Obter dados do usuário do localStorage
-        const userInfo = getUserData();
-        setUser(userInfo);
-        
-        // Buscar dados atualizados do usuário da API
-        const response = await fetch(`/api/users/${userInfo.id}`, {
-          headers: getAuthHeaders()
-        });
-        
-        if (response.ok) {
-          const userData = await response.json();
-          if (userData.data) {
-            setBio(userData.data.bio || '');
-            setInteresses(userData.data.interesses || []);
-            setFotoPrincipal(userData.data.foto || '');
-            setFotos(userData.data.fotos || []);
-          }
-        }
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Erro ao carregar dados do usuário:', error);
-        setLoading(false);
-      }
-    };
+    // Verificar se o usuário está logado
+    const isLoggedIn = isUserLoggedIn();
+    if (!isLoggedIn) {
+      router.push('/login');
+      return;
+    }
     
-    loadUserData();
-  }, []);
+    // Obter dados do usuário
+    const userData = getUserData();
+    if (userData) {
+      setUser(userData);
+      
+      // Inicializar estado de interesses
+      if (userData.interesses) {
+        setInteresses(userData.interesses);
+      }
+      
+      // Inicializar bio se existir
+      if (userData.bio) {
+        setBio(userData.bio);
+      }
+      
+      // Inicializar fotos se existirem
+      if (userData.foto) {
+        setFotoPrincipal(userData.foto);
+      }
+      
+      if (userData.fotos && Array.isArray(userData.fotos)) {
+        // Garantir que não estamos incluindo a foto principal no array de fotos secundárias
+        const fotosSecundarias = userData.fotos.filter(foto => foto !== userData.foto);
+        setFotos(fotosSecundarias);
+      }
+      
+      setLoading(false);
+    }
+  }, [router]);
   
   // Função para adicionar/remover interesse
   const toggleInteresse = (interesse) => {
@@ -149,20 +151,40 @@ export default function Perfil() {
       
       // Adicionar nova foto à lista
       if (data.url) {
+        let fotosAtualizadas = [...fotos];
+        
         // Se é a primeira foto, definir como foto principal
         if (!fotoPrincipal) {
           setFotoPrincipal(data.url);
+        } else {
+          // Adicionar às fotos secundárias (limitando a 3)
+          if (fotosAtualizadas.length < 3) {
+            fotosAtualizadas.push(data.url);
+          } else {
+            // Substituir a foto mais antiga
+            fotosAtualizadas.shift();
+            fotosAtualizadas.push(data.url);
+          }
+          setFotos(fotosAtualizadas);
         }
         
-        // Adicionar às fotos (limitando a 3)
-        if (fotos.length < 3) {
-          setFotos([...fotos, data.url]);
-        } else {
-          // Substituir a primeira foto
-          const newFotos = [...fotos];
-          newFotos.shift();
-          newFotos.push(data.url);
-          setFotos(newFotos);
+        // Atualizar o localStorage se a API indicar
+        if (data.updateLocalStorage) {
+          // Obter dados atuais do usuário
+          const userData = getUserData();
+          if (userData) {
+            // Criar um novo objeto de usuário com as fotos atualizadas
+            const updatedUserData = {
+              ...userData,
+              foto: fotoPrincipal || data.url, // Usa a foto principal existente ou a nova foto se não houver principal
+              fotos: fotoPrincipal 
+                ? fotosAtualizadas // Usa o array atualizado de fotos secundárias
+                : [data.url] // Se a foto principal foi definida agora, inicializa o array
+            };
+            
+            // Salvar no localStorage
+            localStorage.setItem('user', JSON.stringify(updatedUserData));
+          }
         }
         
         setMessage({ 
@@ -179,12 +201,35 @@ export default function Perfil() {
     } finally {
       setUploading(false);
       setNovaFoto(null);
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     }
   };
   
   // Função para definir uma foto como principal
   const setFotoPrincipalHandler = (url) => {
+    // Verificar se a URL já está nas fotos secundárias
+    if (!fotos.includes(url)) {
+      // Se não estiver, adicionar a foto atual principal às fotos secundárias
+      if (fotoPrincipal) {
+        const fotosAtualizadas = [...fotos.filter(foto => foto !== url)];
+        if (fotosAtualizadas.length < 2) {
+          fotosAtualizadas.push(fotoPrincipal);
+        } else {
+          // Se já tiver 2 fotos secundárias, substituir a mais antiga
+          fotosAtualizadas.shift();
+          fotosAtualizadas.push(fotoPrincipal);
+        }
+        setFotos(fotosAtualizadas);
+      }
+    } else {
+      // Se a URL estiver nas fotos secundárias, removê-la e adicionar a atual principal
+      const fotosAtualizadas = fotos.filter(foto => foto !== url);
+      if (fotoPrincipal && fotoPrincipal !== url) {
+        fotosAtualizadas.push(fotoPrincipal);
+      }
+      setFotos(fotosAtualizadas);
+    }
+    
+    // Definir a nova foto principal
     setFotoPrincipal(url);
   };
   
@@ -277,7 +322,10 @@ export default function Perfil() {
         paddingBottom: '70px', // Espaço para o BottomNavigation
         paddingTop: '20px',
         maxWidth: '600px',
-        margin: '0 auto'
+        margin: '0 auto',
+        width: '100%',
+        boxSizing: 'border-box',
+        overflow: 'hidden'
       }}>
         {/* Cabeçalho */}
         <header style={{
@@ -322,7 +370,14 @@ export default function Perfil() {
           borderRadius: '10px',
           padding: '20px',
           margin: '0 15px 20px',
-          boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+          boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+          width: 'auto',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
         }}>
           <h2 style={{ 
             color: '#8319C1', 
@@ -336,11 +391,17 @@ export default function Perfil() {
           <div style={{
             display: 'flex',
             gap: '15px',
-            marginBottom: '15px'
+            marginBottom: '15px',
+            width: 'fit-content', 
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+            justifyContent: 'center'
           }}>
             {/* Foto principal */}
             <div style={{
-              flex: '1.5',
+              width: '240px',
+              flexShrink: 0,
               position: 'relative',
               height: '180px',
               borderRadius: '10px',
@@ -349,7 +410,8 @@ export default function Perfil() {
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+              boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+              boxSizing: 'border-box'
             }}>
               {fotoPrincipal ? (
                 <>
@@ -357,9 +419,13 @@ export default function Perfil() {
                     src={fotoPrincipal} 
                     alt="Foto principal" 
                     style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
                       width: '100%',
                       height: '100%',
-                      objectFit: 'cover'
+                      objectFit: 'cover',
+                      display: 'block'
                     }}
                   />
                   <div style={{
@@ -370,7 +436,8 @@ export default function Perfil() {
                     color: 'white',
                     padding: '5px 10px',
                     borderRadius: '15px',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    zIndex: 2
                   }}>
                     Principal
                   </div>
@@ -391,18 +458,24 @@ export default function Perfil() {
             
             {/* Lista de fotos secundárias */}
             <div style={{
-              flex: '1',
+              width: '160px',
+              flexShrink: 0,
               display: 'flex',
               flexDirection: 'column',
-              gap: '10px'
+              gap: '10px',
+              boxSizing: 'border-box'
             }}>
               {/* Outras fotos (até 2) */}
-              {[0, 1].map((index) => (
+              {[0, 1].map((index) => {
+                // Filtrar fotos para não incluir a foto principal
+                const fotosSecundarias = fotos.filter(foto => foto !== fotoPrincipal);
+                return (
                 <div 
                   key={index}
-                  onClick={() => fotos[index] && setFotoPrincipalHandler(fotos[index])}
+                  onClick={() => fotosSecundarias[index] && setFotoPrincipalHandler(fotosSecundarias[index])}
                   style={{
-                    flex: 1,
+                    width: '160px',
+                    height: '85px',
                     position: 'relative',
                     borderRadius: '10px',
                     overflow: 'hidden',
@@ -411,17 +484,22 @@ export default function Perfil() {
                     justifyContent: 'center',
                     alignItems: 'center',
                     boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                    cursor: fotos[index] ? 'pointer' : 'default'
+                    cursor: fotosSecundarias[index] ? 'pointer' : 'default',
+                    boxSizing: 'border-box'
                   }}
                 >
-                  {fotos[index] ? (
+                  {fotosSecundarias[index] ? (
                     <img 
-                      src={fotos[index]} 
+                      src={fotosSecundarias[index]} 
                       alt={`Foto ${index + 1}`} 
                       style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover'
+                        objectFit: 'cover',
+                        display: 'block'
                       }}
                     />
                   ) : (
@@ -433,12 +511,17 @@ export default function Perfil() {
                     </div>
                   )}
                 </div>
-              ))}
+              )})}
             </div>
           </div>
           
           {/* Upload de fotos */}
-          <div>
+          <div style={{ 
+            width: '100%', 
+            maxWidth: '100%', 
+            boxSizing: 'border-box',
+            overflow: 'hidden'
+          }}>
             <input
               type="file"
               ref={fileInputRef}
@@ -452,15 +535,23 @@ export default function Perfil() {
                 marginTop: '10px',
                 borderRadius: '10px',
                 overflow: 'hidden',
-                position: 'relative'
+                position: 'relative',
+                maxWidth: '100%',
+                width: '100%',
+                height: '200px',
+                boxSizing: 'border-box'
               }}>
                 <img 
                   src={novaFoto.preview} 
                   alt="Preview" 
                   style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
                     width: '100%',
-                    maxHeight: '200px',
-                    objectFit: 'cover'
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block'
                   }}
                 />
                 <div style={{

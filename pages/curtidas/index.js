@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
+import Head from 'next/head';
 
 import { useUtmParams } from '../../components/UtmManager';
 import BottomNavigation from '../../components/BottomNavigation';
 import { isUserLoggedIn, getUserData, getAuthHeaders } from '../../lib/auth';
 import { mulheres } from '../../data/mock';
+import { 
+  obterNotificacoes, 
+  adicionarNotificacao, 
+  marcarNotificacaoComoLida, 
+  obterDadosUsuario, 
+  salvarDadosUsuario
+} from '../../lib/likes-utils';
 
 export default function Curtidas() {
   const { redirectWithUtm } = useUtmParams();
@@ -14,6 +22,7 @@ export default function Curtidas() {
   const [perfilEncontrado, setPerfilEncontrado] = useState(true);
   const [showCurtidasPopup, setShowCurtidasPopup] = useState(false);
   const [showPremiumPopup, setShowPremiumPopup] = useState(false);
+  const [showAlternativePremiumPopup, setShowAlternativePremiumPopup] = useState(false);
   const [matches, setMatches] = useState([]);
   const [likeCount, setLikeCount] = useState(0); // Contador de likes
   const [likesAteMatch, setLikesAteMatch] = useState(0); // Número aleatório de likes até o match
@@ -23,14 +32,33 @@ export default function Curtidas() {
   const [perfisDisponiveis, setPerfisDisponiveis] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [userId, setUserId] = useState(null);
+  const [notificacaoAtual, setNotificacaoAtual] = useState(null); // Estado para armazenar a notificação atual
+  const [notificacoesUsuario, setNotificacoesUsuario] = useState([]); // Estado para armazenar todas as notificações
+  const [userData, setUserData] = useState(null); // Estado para armazenar os dados do usuário
   
   let timer1, timer2;
+
+  // Função auxiliar para atualizar os dados do usuário
+  const atualizarDadosUsuario = (novoDado) => {
+    // Busca os dados atuais do usuário
+    const dadosAtuais = obterDadosUsuario();
+    if (!dadosAtuais) return false;
+    
+    // Mescla os dados atuais com os novos dados
+    const dadosAtualizados = {
+      ...dadosAtuais,
+      ...novoDado
+    };
+    
+    // Salva no localStorage
+    return salvarDadosUsuario(dadosAtualizados);
+  };
 
   // Definir o número de likes até o match ao carregar o componente
   useEffect(() => {
     // Gerar número aleatório entre 1 e 3
     const randomLikes = Math.floor(Math.random() * 3) + 1;   
-    console.log(`Match ocorrerá após ${randomLikes} likes`);
+    
     setLikesAteMatch(randomLikes);
     
     // Verifica se o usuário está logado
@@ -43,10 +71,24 @@ export default function Curtidas() {
         // Buscar matches do usuário para remover perfis já curtidos
         buscarMatches(userInfo.id);
         
+        // Obter dados completos do usuário
+        const dadosUsuario = obterDadosUsuario();
+        if (dadosUsuario) {
+          setUserData(dadosUsuario);
+          
+          // Verificar e inicializar o array de notificações se não existir
+          if (!dadosUsuario.notificacoes) {
+            atualizarDadosUsuario({ notificacoes: [] });
+          } else {
+            setNotificacoesUsuario(dadosUsuario.notificacoes);
+          }
+        }
+        
         // Define os perfisDisponiveis com mulheres
         setPerfisDisponiveis(mulheres);
       } else {
-        redirectWithUtm('/login');      }
+        redirectWithUtm('/login');      
+      }
     } 
     else {
       // Se não houver usuário logado, redirecionar para login
@@ -54,32 +96,104 @@ export default function Curtidas() {
     }
   }, []);
   
-  // Mostrar notificações
+  // Gerenciador de notificações
   useEffect(() => {
-
-    if (perfisDisponiveis.length > 0 && perfisDisponiveis[perfilAtual]?.notificacoes?.length > 0) {
-      const notificacao = perfisDisponiveis[perfilAtual].notificacoes[0];
-
-      timer1 = setTimeout(() => {
-        setShowNotification(true); // Exibir notificação
+    if (perfisDisponiveis.length > 0 && userData) {
+      // Função para agendar a próxima notificação
+      const agendarProximaNotificacao = () => {
+        // Pegar todas as notificações disponíveis de todos os perfis
+        const todasNotificacoes = perfisDisponiveis.flatMap(perfil => 
+          perfil.notificacoes?.map(notif => ({...notif, perfilId: perfil.id})) || []
+        );
         
-        timer2 = setTimeout(() => {
-            setShowNotification(false); // Esconder notificação
-        }, 5000); // Após 5 segundos
-      }, 5000); // Após 5 segundos
+        if (todasNotificacoes.length > 0) {
+          // Contador de notificações global
+          if (typeof window !== 'undefined') {
+            window.notificacoesExibidas = window.notificacoesExibidas || 0;
+          }
+          
+          // Determinar o intervalo com base no número de notificações já exibidas
+          let intervalo;
+          if (window.notificacoesExibidas === 0) {
+            intervalo = 5000; // Primeira notificação após 5s
+          } else if (window.notificacoesExibidas < 3) {
+            intervalo = 10000; // Segunda e terceira notificações a cada 10s
+          } else {
+            intervalo = 30000; // Notificações seguintes a cada 30s
+          }
+          
+          // Debug para mostrar quando será a próxima notificação
+          
+          
+          timer1 = setTimeout(() => {
+            // Seleciona uma notificação aleatória
+            const randomIndex = Math.floor(Math.random() * todasNotificacoes.length);
+            const notificacaoRandom = todasNotificacoes[randomIndex];
+            
+            // Armazenar a notificação no localStorage do usuário
+            const notificacaoParaSalvar = {
+              ...notificacaoRandom,
+              id: Date.now(), // Identificador único
+              dataCriacao: new Date().toISOString(),
+              tipo: 'curtida', // Tipo de notificação
+              lida: false
+            };
+            
+            // Adicionar ao localStorage e atualizar notificações do usuário
+            adicionarNotificacao(notificacaoParaSalvar);
+            
+            // Atualizar o estado local
+            const notificacoesAtualizadas = obterNotificacoes();
+            setNotificacoesUsuario(notificacoesAtualizadas);
+            
+            // Mostrar a notificação na interface
+            setNotificacaoAtual(notificacaoRandom);
+            setShowNotification(true);
+            window.notificacoesExibidas += 1;
+            
+            
+            
+            // Timer para esconder a notificação
+            timer2 = setTimeout(() => {
+              setShowNotification(false); // Esconder notificação
+              
+              // Agendar próxima notificação após esta desaparecer
+              agendarProximaNotificacao();
+            }, 5000); // Manter visível por 5 segundos
+          }, intervalo);
+        }
+      };
+      
+      // Iniciar o ciclo de notificações
+      agendarProximaNotificacao();
     }
     
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
     };
-  }, [perfisDisponiveis, perfilAtual]);
+  }, [perfisDisponiveis, userData]);
   
-
-
-
+  // Função para lidar com o clique na notificação
+  const handleNotificationClick = () => {
+    // Marcar a notificação atual como lida
+    if (notificacaoAtual && notificacaoAtual.id) {
+      marcarNotificacaoComoLida(notificacaoAtual.id);
+      
+      // Atualizar estado local
+      setNotificacoesUsuario(obterNotificacoes());
+    }
+    
+    setShowNotification(false); // Esconde a notificação
+    setShowCurtidasPopup(true); // Mostra o popup de curtidas primeiro
+  };
   
-
+  // Função para abrir o modal premium a partir do modal de curtidas
+  const handleOpenPremiumModal = () => {
+    setShowCurtidasPopup(false);
+    // Sempre abrir a versão alternativa do modal premium (14,90)
+    setShowAlternativePremiumPopup(true);
+  };
 
   // Função para buscar matches do usuário
   const buscarMatches = async (id) => {
@@ -94,6 +208,19 @@ export default function Curtidas() {
       
       const data = await response.json();      
       let matchIds = data.matches;
+
+      // Verificar e atualizar o localStorage com os ids de matches
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const userObj = JSON.parse(userData);
+        if (!userObj.idmatches) {
+          // Se não existir idmatches, criar e popular
+          userObj.idmatches = matchIds;
+          localStorage.setItem('user', JSON.stringify(userObj));
+          
+        }
+      }
+      
       //se nao tiver matches
       if (!data || !data.matches) {
         matchIds = [];
@@ -143,6 +270,41 @@ export default function Curtidas() {
       
       const data = await response.json();
       setMatches(data.matches);
+      
+      // Atualizar o localStorage com o novo match
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const userObj = JSON.parse(userData);
+        if (userObj.idmatches) {
+          // Se já existir, adicionar o novo match se não estiver lá
+          if (!userObj.idmatches.includes(matchId)) {
+            userObj.idmatches.push(matchId);
+          }
+        } else {
+          // Se não existir, criar com o novo match
+          userObj.idmatches = [matchId];
+        }
+        localStorage.setItem('user', JSON.stringify(userObj));
+        
+      }
+      
+      // Adicionando notificação de novo match
+      const perfilMatch = perfisDisponiveis.find(p => p.id === matchId);
+      if (perfilMatch) {
+        const notificacaoMatch = {
+          tipo: 'match',
+          mensagem: `Você deu match com ${perfilMatch.nome}!`,
+          imagem: perfilMatch.imagem || '/images/default.jpg',
+          nome: perfilMatch.nome,
+          perfilId: perfilMatch.id,
+          distancia: perfilMatch.distancia || 'desconhecida',
+          tempo: 'agora',
+          dataCriacao: new Date().toISOString(),
+          lida: false
+        };
+        
+        adicionarNotificacao(notificacaoMatch);
+      }
     } catch (error) {
       console.error('Erro ao registrar match:', error);
     } 
@@ -161,7 +323,7 @@ export default function Curtidas() {
     // Verificar se deve ser um match 
     // Quando o contador atinge o número definido para o match
     const shouldMatch = newLikeCount === likesAteMatch;
-    console.log(`Like ${newLikeCount}/${likesAteMatch}. Match? ${shouldMatch}`);
+    
     
     if (shouldMatch) {
       const perfilMatch = perfisDisponiveis[perfilAtual];
@@ -183,7 +345,7 @@ export default function Curtidas() {
           
           // Definir um novo número de likes até o próximo match
           const newRandomLikes = Math.floor(Math.random() * 3) + 1;
-          console.log(`Próximo match ocorrerá após ${newRandomLikes} likes`);
+          
           setLikesAteMatch(newRandomLikes);
           
           // Redirecionar para chat
@@ -197,8 +359,6 @@ export default function Curtidas() {
         nextPerfil();
       }, 500);
     }
-    
-    
   };
   
   // Função para dar dislike em um perfil
@@ -338,7 +498,6 @@ export default function Curtidas() {
           maxWidth: '500px',
           borderRadius: '10px',
           position: 'relative',
-          minHeight: 'calc(100vh - 45px)', // Ajustado para o novo header
           color: 'rgb(107, 107, 107)'
         }}>
           {perfilEncontrado ? (
@@ -389,7 +548,7 @@ export default function Curtidas() {
                 {/* Botões de like/dislike */}
                 <div style={{
                   position: 'absolute',
-                  bottom: '-70px', // Reduzido para ficar mais próximo
+                  bottom: '-85px', // Reduzido para ficar mais próximo
                   left: '50%',
                   transform: 'translateX(-50%)',
                   display: 'flex',
@@ -484,11 +643,12 @@ export default function Curtidas() {
         </div>
         
         {/* Notificação estilo celular */}
-        {showNotification && perfisDisponiveis[perfilAtual]?.notificacoes?.length > 0 && (
+        {showNotification && notificacaoAtual && (
           <div
+            className="mobile-notification"
             style={{
               position: 'fixed',
-              top: '60px', // Ajustado para novo tamanho do header
+              top: '20px',
               left: '50%',
               transform: 'translateX(-50%)',
               width: '90%',
@@ -499,27 +659,54 @@ export default function Curtidas() {
               padding: '12px',
               display: 'flex',
               alignItems: 'center', 
-              zIndex: 9999,
+              zIndex: 999999999999999999999999999999999999999999999999999999999999,
               backdropFilter: 'blur(10px)',
               WebkitBackdropFilter: 'blur(10px)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               cursor: 'pointer',
               animation: 'slideIn 0.5s forwards'           
             }}
+            onClick={handleNotificationClick}
           >          
-            <img src="/images/celular.png" alt="Celular com Notificação" width={40} height={40} style={{marginRight:"15px"}}/>
-            <div style={{ flex: 1 }}>         
-            <p>Você tem uma nova notificação!</p>
-            <p></p>          
-            </div>
+            <div style={{ position: 'relative', marginRight: '15px' }}>
+              <img 
+                src={notificacaoAtual.imagem} 
+                alt={notificacaoAtual.nome} 
+                className="notification-icon"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  filter: 'blur(2px)' // Efeito de blur na foto
+                }}
+              />
               <div style={{
-                fontSize: '14px',
-                opacity: 0.9,
-                color: '#000000'
-              }}>            
-                {notificacao.mensagem}
-              </div>              
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                fontSize: '16px',
+                color: 'white'
+              }}>
+                🔒
+              </div>
             </div>
+            <div className="notification-content" style={{ flex: 1 }}>         
+              <div className="notification-title" style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                {notificacaoAtual.nome} 
+                <span className="distance" style={{ fontWeight: 'normal', fontSize: '12px', color: '#666', marginLeft: '5px' }}>
+                  {notificacaoAtual.distancia} de distância
+                </span>
+              </div>
+              <div className="notification-message" style={{ fontSize: '14px', marginTop: '3px' }}>
+                {notificacaoAtual.mensagem}
+              </div>
+              <div className="notification-app" style={{ fontSize: '12px', color: '#999', marginTop: '3px' }}>
+                {notificacaoAtual.tempo}
+              </div>
+            </div>
+          </div>
         )}
         
         {/* Popup de match */}
@@ -794,10 +981,7 @@ export default function Curtidas() {
               </div>
             </div>
             <button 
-              onClick={() => {
-                setShowCurtidasPopup(false);
-                setShowPremiumPopup(true);
-              }}
+              onClick={handleOpenPremiumModal}
               style={{
                 background: 'linear-gradient(to right, #420079, #ae00ff)',
                 color: 'white',
@@ -819,7 +1003,7 @@ export default function Curtidas() {
           </div>
         )}
         
-        {/* Popup de Premium */}
+        {/* Popup de Premium (Versão Original) */}
         {showPremiumPopup && (
           <div style={{
             display: 'block',
@@ -891,6 +1075,100 @@ export default function Curtidas() {
               }}
             >
               Obter Premium
+            </button>
+            <div style={{ fontSize: '12px', opacity: '0.7', margin: '10px 0' }}>
+              Ao prosseguir, você concorda com nossos termos de uso e política de privacidade.
+            </div>
+          </div>
+        )}
+        
+        {/* Popup de Premium - Versão Alternativa */}
+        {showAlternativePremiumPopup && (
+          <div style={{
+            display: 'block',
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: '#252525',
+            color: 'white',
+            padding: '25px 20px',
+            borderRadius: '15px',
+            textAlign: 'center',
+            zIndex: 10003,
+            boxShadow: '0 0 20px #8319C1',
+            width: '90%',
+            maxWidth: '350px',
+            border: '1px solid #8319C1'
+          }}>
+            <div style={{
+              fontSize: '22px',
+              marginBottom: '15px',
+              color: '#FF64C5',
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <img src="/images/logoCoroa.png" alt="" width="100px" />
+            </div>
+            <div style={{
+              fontSize: '15px',
+              marginBottom: '20px',
+              lineHeight: '1.4'
+            }}>
+              Desbloqueie agora o acesso total ao APP, use sem limitações, e tenha a experiência completa!
+            </div>
+            <div style={{
+              fontSize: '28px',
+              fontWeight: 'bold',
+              color: '#ae00ff',
+              margin: '15px 0 5px'
+            }}>
+              R$ 14,90 <span style={{ fontSize: '16px', opacity: '0.8', fontWeight: 'normal' }}><br/>(pagamento único)</span>
+            </div>
+            <div style={{ textAlign: 'left', marginLeft: '30px', marginBottom: '40px', fontSize: '14px' }}>
+              <p>Ao assinar o pacote você possui acesso a:</p>
+              <p><span style={{ color: '#ae00ff' }}>• </span> 100 Curtidas</p>
+              <p><span style={{ color: '#ae00ff' }}>• </span> Acesso ilimitado ao chat</p>
+              <p><span style={{ color: '#ae00ff' }}>• </span> Ver quem curtiu você</p>
+              <p><span style={{ color: '#ae00ff' }}>• </span> Múltiplos matches simultâneos</p>
+            </div>
+            <button 
+              onClick={() => setShowAlternativePremiumPopup(false)}
+              style={{
+                backgroundColor: '#ae24fd',
+                background: 'linear-gradient(to right, #420079, #ae00ff)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '30px',
+                padding: '12px 0',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                width: '100%',
+                margin: '10px 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              Obter Premium
+            </button>
+            <button 
+              onClick={() => setShowAlternativePremiumPopup(false)}
+              style={{
+                backgroundColor: 'transparent',
+                color: '#999',
+                border: 'none',
+                padding: '10px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                width: '100%',
+                margin: '5px 0'
+              }}
+            >
+              Agora não
             </button>
             <div style={{ fontSize: '12px', opacity: '0.7', margin: '10px 0' }}>
               Ao prosseguir, você concorda com nossos termos de uso e política de privacidade.

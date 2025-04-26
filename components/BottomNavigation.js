@@ -3,29 +3,41 @@ import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { useUtmParams } from './UtmManager';
 import { isUserLoggedIn, getUserData } from '../lib/auth';
+import { obterNotificacoes } from '../lib/likes-utils';
 
 const BottomNavigation = () => {
   const router = useRouter();
   const { redirectWithUtm } = useUtmParams();
   const [userData, setUserData] = useState(null);
+  const [notificacoesNaoLidas, setNotificacoesNaoLidas] = useState(0);
   
   useEffect(() => {
     // Verificar se o usuário está logado ao montar o componente
     const checkUserLogado = () => {
       if (isUserLoggedIn()) {
         setUserData(getUserData());
+        
+        // Verificar notificações não lidas
+        const todasNotificacoes = obterNotificacoes();
+        const naoLidas = todasNotificacoes.filter(n => !n.lida).length;
+        setNotificacoesNaoLidas(naoLidas);
       } else {
         setUserData(null);
+        setNotificacoesNaoLidas(0);
       }
     };
     
     // Verificar imediatamente
     checkUserLogado();
     
+    // Verificar notificações a cada 10 segundos
+    const interval = setInterval(checkUserLogado, 10000);
+    
     // Adicionar listener para mudanças de armazenamento (caso o usuário faça login em outra aba)
     window.addEventListener('storage', checkUserLogado);
     
     return () => {
+      clearInterval(interval);
       window.removeEventListener('storage', checkUserLogado);
     };
   }, []);
@@ -76,6 +88,7 @@ const BottomNavigation = () => {
     color: active ? '#8319C1' : '#666',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+    position: 'relative'
   });
 
   return (
@@ -101,6 +114,26 @@ const BottomNavigation = () => {
           <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke={isActive('/likes') ? '#8319C1' : '#666'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill={isActive('/likes') ? '#8319C1' : 'none'}/>
         </svg>
         <span style={{ fontSize: '12px', marginTop: '4px' }}>Curtidas</span>
+        {notificacoesNaoLidas > 0 && (
+          <span style={{
+            position: 'absolute',
+            top: '5px',
+            right: '50%',
+            backgroundColor: '#FF4D67',
+            color: 'white',
+            borderRadius: '50%',
+            width: '18px',
+            height: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '10px',
+            fontWeight: 'bold',
+            border: '2px solid white'
+          }}>
+            {notificacoesNaoLidas > 9 ? '9+' : notificacoesNaoLidas}
+          </span>
+        )}
       </div>
       
       {/* Ícone Chat */}
