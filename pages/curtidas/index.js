@@ -35,6 +35,7 @@ export default function Curtidas() {
   const [notificacaoAtual, setNotificacaoAtual] = useState(null); // Estado para armazenar a notificação atual
   const [notificacoesUsuario, setNotificacoesUsuario] = useState([]); // Estado para armazenar todas as notificações
   const [userData, setUserData] = useState(null); // Estado para armazenar os dados do usuário
+  const [hasVenda1, setHasVenda1] = useState(false); // Novo estado para verificar se tem venda1
   
   let timer1, timer2;
 
@@ -56,17 +57,27 @@ export default function Curtidas() {
 
   // Definir o número de likes até o match ao carregar o componente
   useEffect(() => {
-    // Gerar número aleatório entre 1 e 3
-    const randomLikes = Math.floor(Math.random() * 3) + 1;   
-    
-    setLikesAteMatch(randomLikes);
-    
     // Verifica se o usuário está logado
     if (isUserLoggedIn()) {
       const userInfo = getUserData();      
       if (userInfo) {
         setUserId(userInfo.id);        
         setUserPhoto(userInfo.photo || '/images/11.jpg');
+        
+        // Adicionar verificação de venda1
+        const checkPermission = async () => {
+          try {
+            const response = await fetch(`/api/users/${userInfo.id}`);
+            const data = await response.json();
+            
+            setHasVenda1(data.data?.venda1 === true);
+          } catch (error) {
+            console.error('Erro ao verificar permissão:', error);
+            setHasVenda1(false); // Por segurança, define como false em caso de erro
+          }
+        };
+
+        checkPermission(); // Chamar a verificação
         
         // Buscar matches do usuário para remover perfis já curtidos
         buscarMatches(userInfo.id);
@@ -89,11 +100,13 @@ export default function Curtidas() {
       } else {
         redirectWithUtm('/login');      
       }
-    } 
-    else {
-      // Se não houver usuário logado, redirecionar para login
+    } else {
       redirectWithUtm('/login');
     }
+
+    // Gerar número aleatório entre 1 e 3 para likes até match
+    const randomLikes = Math.floor(Math.random() * 3) + 1;   
+    setLikesAteMatch(randomLikes);
   }, []);
   
   // Gerenciador de notificações
@@ -176,16 +189,13 @@ export default function Curtidas() {
   
   // Função para lidar com o clique na notificação
   const handleNotificationClick = () => {
-    // Marcar a notificação atual como lida
-    if (notificacaoAtual && notificacaoAtual.id) {
-      marcarNotificacaoComoLida(notificacaoAtual.id);
-      
-      // Atualizar estado local
-      setNotificacoesUsuario(obterNotificacoes());
+    if (!hasVenda1) {
+      setShowCurtidasPopup(true);
+      return;
     }
-    
-    setShowNotification(false); // Esconde a notificação
-    setShowCurtidasPopup(true); // Mostra o popup de curtidas primeiro
+
+    // Se tiver venda1, redireciona para /likes
+    redirectWithUtm('/likes');
   };
   
   // Função para abrir o modal premium a partir do modal de curtidas
@@ -393,6 +403,13 @@ export default function Curtidas() {
     // Salvar o perfil de match atual no localStorage para ser recuperado na página de contatos
     localStorage.setItem('currentMatch', JSON.stringify(matchedProfile));
     redirectWithUtm('/contatos');
+  };
+
+  // Modificar a função desbloquearPremium
+  const desbloquearPremium = () => {
+    // Abrir link em nova aba
+    window.open("https://pay.kirvano.com/3f46f32c-4963-497b-bdb0-8cc9a88f7b85", "_blank");
+    // Não fechamos mais a modal (remover setShowAlternativePremiumPopup(false))
   };
 
   // Dados para exibir durante o carregamento
@@ -678,19 +695,22 @@ export default function Curtidas() {
                   height: '40px',
                   borderRadius: '50%',
                   objectFit: 'cover',
-                  filter: 'blur(2px)' // Efeito de blur na foto
+                  filter: hasVenda1 ? 'none' : 'blur(2px)' // Remover blur se hasVenda1
                 }}
               />
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                fontSize: '16px',
-                color: 'white'
-              }}>
-                🔒
-              </div>
+              {/* Mostrar cadeado apenas se não tiver venda1 */}
+              {!hasVenda1 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  fontSize: '16px',
+                  color: 'white'
+                }}>
+                  🔒
+                </div>
+              )}
             </div>
             <div className="notification-content" style={{ flex: 1 }}>         
               <div className="notification-title" style={{ fontWeight: 'bold', fontSize: '14px' }}>
@@ -1135,7 +1155,7 @@ export default function Curtidas() {
               <p><span style={{ color: '#ae00ff' }}>• </span> Múltiplos matches simultâneos</p>
             </div>
             <button 
-              onClick={() => setShowAlternativePremiumPopup(false)}
+              onClick={desbloquearPremium}
               style={{
                 backgroundColor: '#ae24fd',
                 background: 'linear-gradient(to right, #420079, #ae00ff)',

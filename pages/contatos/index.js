@@ -155,12 +155,12 @@ export default function Contatos() {
             // Se já existir, adicionar o novo match se não estiver lá
             if (!userObj.idmatches.includes(matchedProfile.id)) {
               userObj.idmatches.push(matchedProfile.id)
-              localStorage.setItem("user", JSON.stringify(userObj))
+              localStorage.setItem('user', JSON.stringify(userObj))
             }
           } else {
             // Se não existir, criar com o novo match
             userObj.idmatches = [matchedProfile.id]
-            localStorage.setItem("user", JSON.stringify(userObj))
+            localStorage.setItem('user', JSON.stringify(userObj))
           }
         }
 
@@ -557,7 +557,7 @@ export default function Contatos() {
       if (userData) {
         const userObj = JSON.parse(userData)
         userObj.idmatches = matchIds
-        localStorage.setItem("user", JSON.stringify(userObj))
+        localStorage.setItem('user', JSON.stringify(userObj))
 
         // Criar chats para os matches
         if (matchIds && matchIds.length > 0) {

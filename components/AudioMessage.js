@@ -9,8 +9,11 @@ import { useState, useEffect } from "react"
  * @param {Object} props - Component properties.
  * @param {Object} props.mensagem - Audio message object.
  * @param {boolean} props.enviada - Indicates if the message was sent by the user.
+ * @param {string} props.userId - User ID.
+ * @param {function} props.onUnauthorized - Callback function to handle unauthorized access.
+ * @param {boolean} props.canPlay - Indicates if the user can play the audio.
  */
-const AudioMessage = ({ mensagem, enviada = false }) => {
+const AudioMessage = ({ mensagem, enviada = false, userId, onUnauthorized, canPlay }) => {
   // Ensure the message is a valid object
   const safeMessage = mensagem || {}
 
@@ -97,6 +100,11 @@ const AudioMessage = ({ mensagem, enviada = false }) => {
 
   // Simulate audio playback without playing real audio
   const togglePlay = () => {
+    if (!canPlay) {
+      onUnauthorized?.()
+      return
+    }
+
     if (isPlaying) {
       // Just pause, don't reset position
       setIsPlaying(false)

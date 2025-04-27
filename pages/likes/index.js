@@ -14,6 +14,9 @@ export default function Likes() {
   const [curtidas, setCurtidas] = useState([]);
   const [notificacoes, setNotificacoes] = useState([]);
   const [notificacoesOrdenadas, setNotificacoesOrdenadas] = useState([]);
+  const [hasVenda1, setHasVenda1] = useState(false);
+  const [notificacoesPerPage, setNotificacoesPerPage] = useState(7); // Quantidade inicial
+  const [currentPage, setCurrentPage] = useState(1);
   
   useEffect(() => {
     // Verificar se o usuário está logado
@@ -22,6 +25,28 @@ export default function Likes() {
       try {
         const parsedUserData = JSON.parse(userData);
         setUser(parsedUserData);
+        
+        // Verificar permissão venda1
+        const checkPermission = async () => {
+          try {
+            const response = await fetch(`/api/users/${parsedUserData.id}`);
+            const data = await response.json();
+            
+            setHasVenda1(data.data?.venda1 === true);
+            
+            // Se não tiver venda1, mostrar modal de curtidas após 1 segundo
+            if (!data.data?.venda1) {
+              setTimeout(() => {
+                setShowCurtidasPopup(true); // Alterado para mostrar a modal de curtidas primeiro
+              }, 1000);
+            }
+          } catch (error) {
+            console.error('Erro ao verificar permissão:', error);
+            setShowCurtidasPopup(true); // Em caso de erro, mostrar modal de curtidas
+          }
+        };
+
+        checkPermission();
         
         // Carregar notificações do localStorage
         const userNotificacoes = obterNotificacoes();
@@ -48,13 +73,6 @@ export default function Likes() {
     }
     
     setLoading(false);
-    
-    // Mostrar popup premium após 1 segundo - Diretamente a modal premium ao navegar
-    const timer = setTimeout(() => {
-      setShowPremiumPopup(true); // Mostra diretamente a modal premium ao entrar na página
-    }, 1000);
-    
-    return () => clearTimeout(timer);
   }, []);
   
   // Função para ordenar notificações
@@ -74,21 +92,16 @@ export default function Likes() {
   
   // Função para marcar notificação como lida - agora abre o modal de curtidas primeiro
   const handleNotificacaoClick = (notificacaoId) => {
-    // Ao invés de marcar como lida, abrir modal de curtidas primeiro
-    setShowCurtidasPopup(true);
-    
-    // A lógica abaixo só será executada quando o usuário for premium
-    // Por enquanto está comentado/desativado
-    /*
+    if (!hasVenda1) {
+      setShowCurtidasPopup(true); // Primeiro mostra a modal de curtidas
+      return;
+    }
+
+    // Se tiver permissão, continua com a lógica normal
     marcarNotificacaoComoLida(notificacaoId);
-    
-    // Atualizar estado local
     const notificacoesAtualizadas = obterNotificacoes();
     setNotificacoes(notificacoesAtualizadas);
-    
-    // Reordenar notificações
     ordenarNotificacoes(notificacoesAtualizadas);
-    */
   };
   
   // Função para abrir a modal premium a partir da modal de curtidas
@@ -99,10 +112,52 @@ export default function Likes() {
   
   // Função para desbloqueio premium (mockada)
   const desbloquearPremium = () => {
-    setShowPremiumPopup(false);
-    // Aqui teria a lógica para processar o pagamento
-    // e atualizar o status premium do usuário
+    // Abrir link de pagamento em nova aba
+    window.open("https://pay.kirvano.com/3f46f32c-4963-497b-bdb0-8cc9a88f7b85", "_blank");
+    // Não fechamos mais a modal com setShowPremiumPopup(false)
   };
+  
+  // Modificar o clique em curtidas para verificar permissão
+  const handleCurtidaClick = () => {
+    if (!hasVenda1) {
+      setShowCurtidasPopup(true); // Primeiro mostra a modal de curtidas
+      return;
+    }
+
+    // Se tiver permissão, mostra os detalhes da curtida
+    // ... lógica para mostrar detalhes da curtida ...
+  };
+  
+  // Modificar o footer premium para verificar permissão
+  const handlePremiumClick = () => {
+    if (!hasVenda1) {
+      setShowCurtidasPopup(true); // Primeiro mostra a modal de curtidas
+      return;
+    }
+  };
+  
+  // Função para calcular o total de páginas
+  const totalPages = Math.ceil(notificacoesOrdenadas.length / notificacoesPerPage);
+
+  // Função para lidar com o clique em "Ver todas"
+  const handleVerTodasClick = () => {
+    if (hasVenda1) {
+      setNotificacoesPerPage(notificacoesPerPage === 7 ? notificacoesOrdenadas.length : 7);
+      setCurrentPage(1); // Resetar para primeira página ao expandir/recolher
+    } else {
+      setShowCurtidasPopup(true);
+    }
+  };
+
+  // Função para mudar de página
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  // Calcular índices das notificações a serem exibidas
+  const indexOfLastNotification = currentPage * notificacoesPerPage;
+  const indexOfFirstNotification = indexOfLastNotification - notificacoesPerPage;
+  const currentNotifications = notificacoesOrdenadas.slice(indexOfFirstNotification, indexOfLastNotification);
   
   if (loading) {
     return (
@@ -181,7 +236,7 @@ export default function Likes() {
               flexDirection: 'column',
               gap: '10px'
             }}>
-              {notificacoesOrdenadas.slice(0, 7).map((notificacao) => (
+              {currentNotifications.map((notificacao) => (
                 <div 
                   key={notificacao.id}
                   onClick={() => handleNotificacaoClick(notificacao.id)}
@@ -212,18 +267,20 @@ export default function Likes() {
                           width: '100%',
                           height: '100%',
                           objectFit: 'cover',
-                          filter: 'blur(5px)' // Ofuscar imagem (recurso premium)
+                          filter: hasVenda1 ? 'none' : 'blur(5px)'
                         }} 
                       />
-                      <div style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        fontSize: '15px'
-                      }}>
-                        🔒
-                      </div>
+                      {!hasVenda1 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          fontSize: '15px'
+                        }}>
+                          🔒
+                        </div>
+                      )}
                     </div>
                   )}
                   <div style={{ flex: 1 }}>
@@ -253,18 +310,92 @@ export default function Likes() {
                   )}
                 </div>
               ))}
-              {notificacoesOrdenadas.length > 7 && (
+              
+              {/* Botão Ver Todas/Recolher */}
+              {notificacoesOrdenadas.length > 7 && hasVenda1 && (
                 <div 
                   style={{
                     textAlign: 'center',
                     fontSize: '14px',
                     color: '#8319C1',
                     marginTop: '5px',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    padding: '10px'
                   }}
-                  onClick={() => setShowCurtidasPopup(true)}
+                  onClick={handleVerTodasClick}
                 >
-                  Ver todas ({notificacoesOrdenadas.length})
+                  {notificacoesPerPage === 7 ? 
+                    `Ver todas (${notificacoesOrdenadas.length})` : 
+                    'Recolher lista'
+                  }
+                </div>
+              )}
+
+              {/* Paginação */}
+              {hasVenda1 && notificacoesPerPage !== 7 && totalPages > 1 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  marginTop: '15px'
+                }}>
+                  {/* Botão Anterior */}
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: '5px 10px',
+                      backgroundColor: currentPage === 1 ? '#ddd' : '#8319C1',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: currentPage === 1 ? 'default' : 'pointer',
+                      opacity: currentPage === 1 ? 0.5 : 1
+                    }}
+                  >
+                    ←
+                  </button>
+
+                  {/* Números das Páginas */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        style={{
+                          padding: '5px 10px',
+                          backgroundColor: currentPage === pageNum ? '#8319C1' : 'transparent',
+                          color: currentPage === pageNum ? 'white' : '#8319C1',
+                          border: '1px solid #8319C1',
+                          borderRadius: '5px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Botão Próximo */}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    style={{
+                      padding: '5px 10px',
+                      backgroundColor: currentPage === totalPages ? '#ddd' : '#8319C1',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: currentPage === totalPages ? 'default' : 'pointer',
+                      opacity: currentPage === totalPages ? 0.5 : 1
+                    }}
+                  >
+                    →
+                  </button>
                 </div>
               )}
             </div>
@@ -283,79 +414,80 @@ export default function Likes() {
             margin: '0 auto'
           }}>
             {curtidas && curtidas.length > 0 ? (
-              // Limitar para 4 imagens independente da quantidade de curtidas
               curtidas.slice(0, 4).map((pessoa) => (
-              <div 
-                key={pessoa.id}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '10px',
-                  overflow: 'hidden',
-                  boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                <div 
+                  key={pessoa.id}
+                  style={{
+                    backgroundColor: 'white',
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
                     position: 'relative',
                     cursor: 'pointer',
-                    aspectRatio: '1 / 1' // Garantir formato quadrado
-                }}
-                  onClick={() => setShowCurtidasPopup(true)}
-              >
-                <div style={{
-                  position: 'relative',
+                    aspectRatio: '1 / 1'
+                  }}
+                  onClick={handleCurtidaClick}
+                >
+                  <div style={{
+                    position: 'relative',
                     height: '100%',
                     overflow: 'hidden'
-                }}>
-                  <img 
-                    src={pessoa.imagem} 
-                    alt={pessoa.nome} 
-                    style={{
-                      width: '100%',
-                      height: '100%',
+                  }}>
+                    <img 
+                      src={pessoa.imagem} 
+                      alt={pessoa.nome} 
+                      style={{
+                        width: '100%',
+                        height: '100%',
                         objectFit: 'cover',
-                        filter: 'blur(10px)'
-                    }}
-                  />
+                        filter: hasVenda1 ? 'none' : 'blur(10px)'
+                      }}
+                    />
+                    {!hasVenda1 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(0,0,0,0.3)'
+                      }}>
+                        <div style={{
+                          fontSize: '36px'
+                        }}>
+                          🔒
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div style={{
                     position: 'absolute',
-                    top: 0,
+                    bottom: 0,
                     left: 0,
                     width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor: 'rgba(0,0,0,0.3)'
+                    padding: '15px',
+                    backgroundImage: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                    color: 'white',
+                    textAlign: 'left'
                   }}>
-                    <div style={{
-                      fontSize: '36px'
+                    <h3 style={{
+                      margin: '0 0 5px 0',
+                      fontSize: '16px',
+                      fontWeight: 'bold'
                     }}>
-                      🔒
+                      {pessoa.nome.split(',')[0]}
+                    </h3>
+                    <p style={{
+                      margin: 0,
+                      fontSize: '14px',
+                      opacity: 0.8
+                    }}>
+                      {pessoa.distancia} de distância
+                    </p>
                   </div>
-                </div>
-                <div style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      width: '100%',
-                      padding: '15px',
-                      backgroundImage: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
-                      color: 'white',
-                      textAlign: 'left'
-                }}>
-                  <h3 style={{
-                    margin: '0 0 5px 0',
-                    fontSize: '16px',
-                        fontWeight: 'bold'
-                  }}>
-                    {pessoa.nome.split(',')[0]}
-                  </h3>
-                  <p style={{
-                    margin: 0,
-                    fontSize: '14px',
-                        opacity: 0.8
-                  }}>
-                    {pessoa.distancia} de distância
-                  </p>
-                </div>
-              </div>
                 </div>
               ))
             ) : (
@@ -380,56 +512,58 @@ export default function Likes() {
           </div>
         </section>
       </main>
-      
-      {/* Footer com Premium - fixo na parte inferior */}
-      <div style={{
-        position: 'fixed',
-        bottom: '60px', // Posição logo acima do BottomNavigation
-        left: 0,
-        width: '100%',
-        padding: '15px',
-        backgroundColor: '#f8f8f8',
-        borderTop: '1px solid #eee',
-        zIndex: 990
-      }}>
-          <div style={{
-            backgroundColor: 'rgba(131, 25, 193, 0.1)',
-            borderRadius: '10px',
-            padding: '15px',
-            display: 'flex',
-          alignItems: 'center',
-          maxWidth: '600px',
-          marginLeft: 'auto',
-          marginRight: 'auto',
-          marginBottom: '10px'
-          }}>
-            <div style={{ fontSize: '24px', marginRight: '10px' }}>✨</div>
-            <div style={{ fontSize: '14px', color: '#333' }}>
-              <strong>Premium:</strong> Desbloqueie para ver quem curtiu seu perfil e ter acesso ilimitado às conversas!
-            </div>
-          </div>
-          
-          <button
-          onClick={() => setShowCurtidasPopup(true)}
-            style={{
-              width: '100%',
+
+      {/* Footer com Premium - Esconder completamente se hasVenda1 */}
+      {!hasVenda1 && (
+        <div style={{
+          position: 'fixed',
+          bottom: '60px', // Posição logo acima do BottomNavigation
+          left: 0,
+          width: '100%',
+          padding: '15px',
+          backgroundColor: '#f8f8f8',
+          borderTop: '1px solid #eee',
+          zIndex: 990
+        }}>
+            <div style={{
+              backgroundColor: 'rgba(131, 25, 193, 0.1)',
+              borderRadius: '10px',
+              padding: '15px',
+              display: 'flex',
+            alignItems: 'center',
             maxWidth: '600px',
-            padding: '12px 0',
-              backgroundColor: '#8319C1',
-              color: 'white',
-              border: 'none',
-              borderRadius: '25px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-            display: 'block',
             marginLeft: 'auto',
-            marginRight: 'auto'
-          }}
-        >
-          Desbloqueie o Premium
-        </button>
-      </div>
+            marginRight: 'auto',
+            marginBottom: '10px'
+            }}>
+              <div style={{ fontSize: '24px', marginRight: '10px' }}>✨</div>
+              <div style={{ fontSize: '14px', color: '#333' }}>
+                <strong>Premium:</strong> Desbloqueie para ver quem curtiu seu perfil e ter acesso ilimitado às conversas!
+              </div>
+            </div>
+            
+            <button
+            onClick={handlePremiumClick}
+              style={{
+                width: '100%',
+              maxWidth: '600px',
+              padding: '12px 0',
+                backgroundColor: '#8319C1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '25px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+              display: 'block',
+              marginLeft: 'auto',
+              marginRight: 'auto'
+            }}
+          >
+            Desbloqueie o Premium
+          </button>
+        </div>
+      )}
       
       {/* Popup de Veja quem curtiu você (Modal intermediário) */}
       {showCurtidasPopup && (

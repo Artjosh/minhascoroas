@@ -538,55 +538,72 @@ export default function Perfil() {
                 position: 'relative',
                 maxWidth: '100%',
                 width: '100%',
-                height: '200px',
-                boxSizing: 'border-box'
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
               }}>
-                <img 
-                  src={novaFoto.preview} 
-                  alt="Preview" 
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    display: 'block'
-                  }}
-                />
+                {/* Preview da imagem */}
                 <div style={{
-                  marginTop: '10px',
-                  display: 'flex',
-                  gap: '10px'
+                  width: '100%',
+                  height: '200px',
+                  position: 'relative',
+                  borderRadius: '10px',
+                  overflow: 'hidden'
                 }}>
-                  <button
-                    onClick={() => setNovaFoto(null)}
+                  <img 
+                    src={novaFoto.preview} 
+                    alt="Preview" 
                     style={{
-                      flex: 1,
-                      padding: '8px 0',
-                      border: 'none',
-                      backgroundColor: '#f0f0f0',
-                      borderRadius: '20px',
-                      cursor: 'pointer'
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block'
                     }}
-                  >
-                    Cancelar
-                  </button>
+                  />
+                </div>
+
+                {/* Botões de ação */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  padding: '10px 0'
+                }}>
+                  {/* Botão de Salvar */}
                   <button
                     onClick={uploadFoto}
                     disabled={uploading}
                     style={{
-                      flex: 1,
-                      padding: '8px 0',
+                      width: '100%',
+                      padding: '12px 0',
                       border: 'none',
                       backgroundColor: '#8319C1',
                       color: 'white',
                       borderRadius: '20px',
                       cursor: 'pointer',
-                      opacity: uploading ? 0.7 : 1
+                      opacity: uploading ? 0.7 : 1,
+                      fontSize: '16px',
+                      fontWeight: 'bold'
                     }}
                   >
-                    {uploading ? 'Enviando...' : 'Enviar Foto'}
+                    {uploading ? 'Salvando foto...' : 'Salvar foto'}
+                  </button>
+
+                  {/* Botão de Cancelar */}
+                  <button
+                    onClick={() => setNovaFoto(null)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 0',
+                      border: '1px solid #8319C1',
+                      backgroundColor: 'transparent',
+                      color: '#8319C1',
+                      borderRadius: '20px',
+                      cursor: 'pointer',
+                      fontSize: '16px'
+                    }}
+                  >
+                    Cancelar
                   </button>
                 </div>
               </div>

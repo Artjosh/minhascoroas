@@ -29,6 +29,8 @@ export default function Chat() {
   const inputRef = useRef(null)
   const [perfilMatch, setPerfilMatch] = useState(null)
   const [etapaAtual, setEtapaAtual] = useState(0)
+  const [showModal, setShowModal] = useState(false)
+  const [canChat, setCanChat] = useState(false)
 
   // Função para garantir que as mensagens estejam em um formato consistente
   const sanitizarMensagens = (mensagens) => {
@@ -207,6 +209,24 @@ export default function Chat() {
     }
   }, [id, router, redirectWithUtm])
 
+  // Verificar permissão ao montar o componente
+  useEffect(() => {
+    const checkPermission = async () => {
+      if (!userId) return
+      
+      try {
+        const response = await fetch(`/api/users/${userId}`)
+        const data = await response.json()
+        setCanChat(data.data?.venda2 === true)
+      } catch (error) {
+        console.error('Erro ao verificar permissão:', error)
+        setCanChat(false)
+      }
+    }
+    
+    checkPermission()
+  }, [userId])
+
   // Focar no input quando o chat carregar
   useEffect(() => {
     if (!loading && inputRef.current) {
@@ -224,6 +244,12 @@ export default function Chat() {
   // Função para enviar uma nova mensagem
   const handleEnviarMensagem = (e) => {
     e.preventDefault()
+
+    // Se estiver na etapa 1 e não tiver permissão, mostrar modal
+    if (etapaAtual === 1 && !canChat) {
+      setShowModal(true)
+      return
+    }
 
     if (!novaMensagem.trim() || !userId || !id) return
 
@@ -424,9 +450,12 @@ export default function Chat() {
                 <AudioMessage 
                   mensagem={{
                     ...mensagem,
-                    userImage: usuario.foto // Adicionando a foto do usuário à mensagem
+                    userImage: usuario.foto
                   }} 
-                  enviada={mensagem.enviada} 
+                  enviada={mensagem.enviada}
+                  userId={userId}
+                  onUnauthorized={() => setShowModal(true)}
+                  canPlay={canChat}
                 />
               ) : (
                 <div
@@ -545,6 +574,84 @@ export default function Chat() {
           </button>
         </form>
       </div>
+
+      {/* Modal de Acesso Premium */}
+      {showModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            zIndex: 10000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}
+        >
+          <div 
+            className="secure-chat-popup active" 
+            id="chat-access-popup" 
+            style={{
+              position: 'relative',
+              backgroundColor: '#000000',
+              color: 'white',
+              padding: '25px 20px',
+              borderRadius: '15px',
+              textAlign: 'center',
+              zIndex: 10001,
+              boxShadow: '0 0 20px #8319C1',
+              width: '90%',
+              maxWidth: '350px',
+              border: '1px solid #8319C1',
+              display: 'block',
+              borderColor: '#8319C1'
+            }}
+          >
+            <div className="secure-chat-title">
+              <img src="logo.icon-removebg-preview.png" alt="" width="50px" />
+            </div>
+            
+            <div className="secure-chat-description">
+              Desbloqueie agora o acesso total ao APP, use sem limitações, e tenha a experiência completa!
+            </div>
+            
+            <div className="secure-chat-price" style={{ color: '#ae00ff', margin: '20px 0' }}>
+              R$ 27,90 <span className="payment-type"><br />(pagamento único)</span>
+            </div>
+            
+            <div className="secure-chat-security" style={{ textAlign: 'left', marginLeft: '30px', marginBottom: '40px' }}>
+              <p>Ao assinar o pacote você possui acesso a:</p>
+              <p><span style={{ color: '#ae00ff' }}>• </span> 100 Curtidas</p>
+              <p><span style={{ color: '#ae00ff' }}>• </span> Acesso ilimitado ao chat</p>
+              <p><span style={{ color: '#ae00ff' }}>• </span> Ver quem curtiu você</p>
+              <p><span style={{ color: '#ae00ff' }}>• </span> Múltiplos matches simultâneos</p>
+            </div>
+            
+            <a 
+              href="https://minhacoroa.online/contatos/SEU%20LINK%20AQUI%20FRONT" 
+              className="secure-chat-button" 
+              style={{ 
+                backgroundColor: '#ae24fd',
+                display: 'block',
+                padding: '15px',
+                borderRadius: '10px',
+                textDecoration: 'none',
+                color: 'white',
+                marginBottom: '15px'
+              }}
+            >
+              <i className="fas fa-credit-card"></i> Obter Premium
+            </a>
+            
+            <div className="secure-chat-terms" style={{ fontSize: '12px', opacity: 0.8 }}>
+              Ao prosseguir, você concorda com nossos termos de uso e política de privacidade.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
