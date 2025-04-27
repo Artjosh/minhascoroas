@@ -7,16 +7,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Verificar token de autorização
+    // Verificar o token de bypass da Vercel
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Token de autorização ausente ou inválido' });
     }
     
     const token = authHeader.replace('Bearer ', '');
-    const kivarnoToken = process.env.KIVARNO;
-    
-    if (token !== kivarnoToken) {
+    const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+
+    if (!bypassSecret || token !== bypassSecret) {
       return res.status(403).json({ error: 'Token inválido' });
     }
 
