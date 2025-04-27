@@ -37,17 +37,13 @@ COMMENT ON COLUMN usuarios.reset_token IS 'Token único para redefinição de se
 COMMENT ON COLUMN usuarios.reset_token_expires IS 'Data de expiração do token de redefinição de senha';
 COMMENT ON COLUMN usuarios.created_at IS 'Data de criação do registro';
 
--- Para migração em tabelas existentes, execute:
--- 
--- ALTER TABLE usuarios ADD COLUMN bio TEXT DEFAULT '' NOT NULL;
--- ALTER TABLE usuarios ADD COLUMN interesses JSONB DEFAULT '[]'::jsonb NOT NULL;
--- ALTER TABLE usuarios ADD COLUMN fotos JSONB DEFAULT '[]'::jsonb NOT NULL;
--- ALTER TABLE usuarios ADD COLUMN reset_token VARCHAR(255);
--- ALTER TABLE usuarios ADD COLUMN reset_token_expires TIMESTAMP WITH TIME ZONE;
--- 
--- COMMENT ON COLUMN usuarios.foto IS 'URL da foto principal do perfil (imagem de avatar)';
--- COMMENT ON COLUMN usuarios.fotos IS 'Array de URLs com todas as fotos do usuário (até 3)';
--- COMMENT ON COLUMN usuarios.bio IS 'Descrição biográfica do usuário';
--- COMMENT ON COLUMN usuarios.interesses IS 'Array com interesses/hobbies do usuário';
--- COMMENT ON COLUMN usuarios.reset_token IS 'Token único para redefinição de senha';
--- COMMENT ON COLUMN usuarios.reset_token_expires IS 'Data de expiração do token de redefinição de senha';
+create table webhook_logs (
+  id uuid default uuid_generate_v4() primary key,
+  tipo text,
+  sale_id text,
+  checkout_id text,
+  customer_email text,
+  payload jsonb,
+  processado_em timestamp with time zone,
+  created_at timestamp with time zone default now()
+);
